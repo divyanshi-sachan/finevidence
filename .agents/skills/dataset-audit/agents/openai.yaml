@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dataset Audit"
+  short_description: "Inspect dataset quality and split risks"
+  default_prompt: "Use $dataset-audit to inspect the local FinQA dataset before preprocessing."

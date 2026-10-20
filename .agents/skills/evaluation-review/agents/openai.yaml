@@ -1,0 +1,4 @@
+interface:
+  display_name: "Evaluation Review"
+  short_description: "Review metrics, errors, and reproducibility"
+  default_prompt: "Use $evaluation-review to examine this FinEvidence evaluation run."

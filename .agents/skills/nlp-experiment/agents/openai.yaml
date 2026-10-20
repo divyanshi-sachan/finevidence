@@ -1,0 +1,4 @@
+interface:
+  display_name: "Nlp Experiment"
+  short_description: "Run a reproducible NLP experiment"
+  default_prompt: "Use $nlp-experiment to plan a transparent FinEvidence baseline."

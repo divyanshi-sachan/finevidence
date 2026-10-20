@@ -1,0 +1,38 @@
+# Python environments and interpreter artifacts
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Data and generated research artifacts
+data/raw/
+data/interim/
+data/processed/
+artifacts/
+checkpoints/
+models/
+outputs/
+reports/
+mlruns/
+wandb/
+
+# OS and editor files
+.DS_Store
+.idea/
+.vscode/
