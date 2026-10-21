@@ -6,7 +6,7 @@
 - **Dataset:** pinned public FinQA files recorded in `docs/dataset-card.md`; train used for fitting, dev used once for evaluation, official test not loaded.
 - **Configuration:** `configs/lexical_value_baseline.toml`; seed `42` is recorded although this deterministic TF–IDF run has no randomized training step.
 - **Command:** `.venv/bin/jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=300 notebooks/06_lexical_value_baseline.ipynb`
-- **Code state:** local working tree; no commit revision exists yet.
+- **Code state:** run from an uncommitted working tree; that code state was first committed as `a6d6ac2`.
 - **Metric:** display-answer accuracy under the documented comparator; denominator is 871 dev records with non-empty `answer`. The 12 dev records with empty display answers are retained and reported separately.
 - **Observed result:** 3/871 correct (0.003444, 0.344%). By reference type: numeric 3/356 (0.008427, 0.843%); numeric percent 0/492; text 0/23.
 - **Diagnostics:** among 868 incorrect eligible predictions, 567 candidate source keys matched a dev gold-evidence key and 301 did not. This is an evidence-alignment diagnostic only, not a causal error classification.
@@ -20,7 +20,7 @@
 - **Dataset and split protocol:** pinned public FinQA train and dev files; vocabulary fitted on train raw questions and raw context only; evaluated once on dev. The official test split was not loaded.
 - **Configuration:** configs/question_conditioned_value_selection.toml; fixed TF–IDF settings with top three evidence segments.
 - **Command:** .venv/bin/jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=300 notebooks/07_question_conditioned_evidence_value_selection.ipynb
-- **Code state:** local working tree; no commit revision exists yet.
+- **Code state:** run from an uncommitted working tree; that code state was first committed as `a6d6ac2`.
 - **Prediction boundary:** only ID, question, table, pre_text, and post_text enter candidate construction/ranking. Gold answers, executable answers, programs, gold evidence, and derived retrieval artifacts are accessed only after predictions for metrics/diagnostics.
 - **Metric:** fixed display-answer comparator. Denominator 871 dev records with non-empty display answers; 12 empty display answers retained and reported separately.
 - **Observed result:** 3/871 correct (0.003444, 0.344%), exactly equal to the lexical value-selection reference. By reference type: numeric 3/356 (0.843%); numeric percent 0/492; text 0/23. This run does not demonstrate improvement.
@@ -49,7 +49,7 @@
 - **Dataset and split protocol:** pinned public FinQA train and dev files. Train annotations were inspected for design decisions. Dev was used only to validate the executor on gold programs and to re-score the fixed Notebook 06–08 dev prediction artifacts. The official test split was not loaded.
 - **Configuration:** `configs/baseline_selection_inspection.toml`; seed 42; TF-IDF settings match the earlier runs, with `sublinear_tf=True`.
 - **Command:** `.venv/bin/jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=600 notebooks/09_baseline_selection_inspection.ipynb`
-- **Code state:** local working tree; no commit revision exists yet.
+- **Code state:** run from an uncommitted working tree; that code state was first committed as `a6d6ac2`.
 - **Observed results (train):** 5,730/6,251 programs have ≤2 steps, and the top 10 of 119 templates cover 86.8%. 14,190/14,210 numeric literals occur in the context. 5,398 records exceed 512 whitespace tokens. TF-IDF within-record recall@3 is 82.9% any-gold and 53.8% all-gold (28.5% all-gold for multi-fact records). The display comparator accepts the gold executed value for 2,203/6,083 numeric-`exe_ans` records, and for 0/3,480 percentage answers when given the raw ratio.
 - **Executor validation:** `execute_program` on gold programs equals `exe_ans` for 6,251/6,251 train and 883/883 dev records.
 - **Re-scored dev execution accuracy (denominator 883):** lexical value selection 5 (0.566%), question-conditioned selection 6 (0.680%), conservative arithmetic 35 (3.964%). The display-answer results in the entries above are unchanged.
