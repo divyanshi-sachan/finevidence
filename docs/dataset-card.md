@@ -44,6 +44,10 @@ The release source and files are verified, but a legal interpretation of the rep
 
 Preserve official train/dev/test assignments. Use train data to fit transformations, dev data for model/preprocessing decisions, and test data only for final reporting. Do not use test answers, programs, or gold evidence for training or selection. Keep split-overlap diagnostics in the experiment record and do not silently deduplicate benchmark records.
 
+The executed preprocessing analysis defined two safe representations: a structured payload containing only `id`, `question`, `table`, `pre_text`, and `post_text`, and a deterministic table-row rendering built from the raw table. Across all 8,281 public records, the structured payload preserved the raw table exactly and the rendering contained every non-empty raw table cell and header. This is a structural preservation check, not proof that a rendering retains every financial meaning.
+
+The official repository records a 2022 repair to its earlier `table_row_to_text` function: the original function leaked label information and overstated retriever results. FinEvidence must not reuse derived fields (`table_retrieved`, `text_retrieved`, `model_input`, or `tfidftopn`) as model inputs until their provenance is independently documented. The local analysis observed `model_input` key overlap with `gold_inds`; it is therefore explicitly excluded from answer-prediction inputs, rather than treated as neutral context.
+
 ## Limitations and unresolved questions
 
 Field semantics, annotation completeness, source-document provenance, official benchmark normalization, and permitted-use conditions still need deeper verification. Financial language, units, reporting-period ambiguity, and table extraction format can limit generalization beyond this benchmark.

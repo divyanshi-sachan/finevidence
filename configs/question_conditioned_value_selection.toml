@@ -1,0 +1,10 @@
+# Dev-only experiment. Vocabulary is fitted on train raw question/context text.
+seed = 42
+dataset_root = "data/raw"
+train_split = "train"
+evaluation_split = "dev"
+experiment_name = "question-conditioned-evidence-value-selection-dev-v1"
+max_features = 50000
+ngram_min = 1
+ngram_max = 2
+top_evidence_segments = 3

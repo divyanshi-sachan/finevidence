@@ -1,0 +1,9 @@
+# Train-fitted lexical value-selection baseline. No official test labels are read.
+seed = 42
+dataset_root = "data/raw"
+train_split = "train"
+evaluation_split = "dev"
+experiment_name = "lexical-value-selection-dev-v1"
+max_features = 50000
+ngram_min = 1
+ngram_max = 2

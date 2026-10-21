@@ -8,12 +8,17 @@ Notebooks are core research deliverables. They document executed inspection and 
 | --- | --- | --- | --- |
 | `01_problem_and_dataset.ipynb` | M1 → M2 | Questions, source record, examples, and schema inspection. | Initial executable scaffold. |
 | `02_finQA_eda.ipynb` | M2 | EDA for questions, answers, tables/text, missing values, and visualizations. | Create when data is inspected. |
-| `03_data_preprocessing.ipynb` | M2 | Preprocessing decisions, validation, and before/after examples. | Create after EDA decisions. |
-| `04_baseline_models.ipynb` | M3 | Simple baselines and reproducible evaluation. | Create after preprocessing. |
-| `05_financial_retrieval.ipynb` | M3 | Retrieval experiments and evidence selection. | Create when retrieval work begins. |
-| `06_numerical_reasoning.ipynb` | M3 | Value normalization, calculations, and reasoning evaluation. | Create when reasoning work begins. |
-| `07_model_evaluation.ipynb` | M4 | Consistent comparison of approaches. | Create after comparable runs exist. |
-| `08_error_analysis.ipynb` | M4 | Incorrect predictions, failure categories, limitations, improvements. | Create after evaluation. |
+| `03_finqa_preprocessing_analysis.ipynb` | M2 | Executed analysis of value formats, program grammar, evidence alignment, and inference-safe serialization. | Executed 2026-10-20. |
+| `04_data_preprocessing.ipynb` | M2 | Executed reusable value, parser, diagnostics, and input-construction implementation. | Executed 2026-10-20. |
+| `05_preprocessing_validation_and_answer_policy.ipynb` | M2 → M3 | Train-only preprocessing validation and display-answer evaluation policy. | Executed 2026-10-20. |
+| `06_lexical_value_baseline.ipynb` | M3 | Executed train-fitted lexical value-selection baseline, evaluated on dev only. | Executed 2026-10-20. |
+| `07_question_conditioned_evidence_value_selection.ipynb` | M3 | Retrieve-then-select lexical run, evaluated on dev only. | Executed 2026-10-20. |
+| `08_conservative_numerical_reasoning.ipynb` | M3 | One-operation arithmetic over retrieved values, evaluated on dev only. | Executed 2026-10-20. |
+| `09_baseline_selection_inspection.ipynb` | M3 | Train-structure inspection, official execution-accuracy convention, re-scoring of 06–08. | Executed 2026-10-21. |
+| `10_retriever_training.ipynb` | M3 | Cross-encoder evidence retriever (GPU), dev recall@k. | Planned; see `docs/finqanet-baseline-plan.md`. |
+| `11_program_generator.ipynb` | M3 | Program generator plus safe execution, dev execution/program accuracy. | Planned. |
+| `12_model_evaluation.ipynb` | M4 | Consistent comparison of approaches. | Create after comparable runs exist. |
+| `13_error_analysis.ipynb` | M4 | Incorrect predictions, failure categories, limitations, improvements. | Create after evaluation. |
 
 ## Standards
 
