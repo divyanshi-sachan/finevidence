@@ -13,8 +13,16 @@ FinEvidence follows the six-stage Industry Track. The detailed objectives, deliv
 
 ## Current stage
 
-**M3 — Baseline & Model Development** is active. M1 and M2 repository evidence exists, but formal milestone acceptance is still pending; the M2 license/permitted-use review and privacy assessment remain open. Three dev-only lexical/arithmetic runs are logged. [Notebook 09](../notebooks/09_baseline_selection_inspection.ipynb) adopted official execution accuracy as the primary metric and selected a FinQANet-style baseline.
+**M3 — Baseline & Model Development: deliverables complete; ready for review.** M1 and M2 repository evidence exists, but formal milestone acceptance is still pending, and the M2 license/permitted-use review and privacy assessment remain open.
+
+## M3 handoff (2026-10-22)
+
+- **Completed deliverables.** Baselines: lexical value selection, question-conditioned selection and conservative arithmetic (Notebooks 06–08). Evaluation convention: official execution and program accuracy, safe executor, retrieval recall (Notebook 09). Candidate: a cross-encoder retriever (Notebook 10) and a T5 program generator (Notebook 11), all with versioned configs, tested `src/` code and experiment-log entries.
+- **Observed dev results (execution accuracy, 883 records).** Conservative arithmetic 0.0396; retriever + generator **0.5923** (program accuracy 0.5561); gold-facts oracle 0.6546. Retriever all-gold recall@5 is 0.8698, against 0.6602 for TF-IDF.
+- **Validation.** `ruff check`, `ruff format --check` and `pytest` pass. The executor and program-equivalence checks were validated against the official evaluator on train/dev gold programs. Both GPU runs were re-scored locally from their saved artifacts and matched exactly.
+- **Known limitations and risks.** Checkpoints were selected on dev and reported on dev. Each result is a single seed on one GPU type. The retriever checkpoint was not kept, so it must be retrained at `7028afc` before test-time retrieval. The M2 license and privacy items are still open.
+- **M4 entry condition.** M3 results reviewed; test split still untouched. First M4 task: categorized error analysis of the 360 dev errors (retrieval, operand selection, period/unit, multi-step composition, ambiguity), then robustness checks. The single test evaluation happens only after these decisions are fixed.
 
 ## Immediate next task
 
-Build and run the program generator (Notebook 11) from the [FinQANet-style baseline plan](finqanet-baseline-plan.md), using the Notebook 10 dev rankings (top 5) plus a gold-facts oracle. Steps 1–4 of that plan are done; the retriever reached dev all-gold recall@5 of 0.8698 vs 0.6602 for TF-IDF. Keep the official test split reserved for final reporting.
+Start M4 with a categorized error analysis of the Notebook 11 retrieved-condition dev errors, using the saved predictions in `data/processed/`. Close the open M2 license and privacy items in parallel. Keep the official test split reserved for the final M4 run.

@@ -105,3 +105,27 @@
 - **Failure:** `torch.OutOfMemoryError` during the first epoch's forward pass, with 13.77 GiB of 14.56 GiB allocated. The traceback shows the decoder key/value cache being filled during training.
 - **Fix (commit after `24db253`):** each 16-example optimizer step is processed as two 8-example chunks, weighted by their target-token share, with `use_cache=False` during training. Beam-search decoding uses `eval_batch_size = 16`. `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` is set, and peak GPU memory is printed each epoch. On CPU with `t5-small`, the token-weighted 2×8 gradient matched the 16-example full-batch gradient (max absolute difference 1.4e-6, largest gradient 5.2), so the optimization target is unchanged.
 - **Result:** none; no epoch completed. This entry records the attempt only.
+
+## 2026-10-22 — T5 program generator over retrieved facts, dev (Notebook 11)
+
+- **Question:** Given the Notebook 10 retriever's top 5 dev facts, how often does a fine-tuned `t5-base` generate a program whose execution equals `exe_ans`, and how much error comes from retrieval rather than generation?
+- **Dataset and split protocol:** pinned public FinQA train (fitting) and dev (checkpoint selection and reporting), verified by SHA-256. The official test split was not loaded. Dev retrieved inputs come from the SHA-256-verified Notebook 10 ranking file and read no annotation field. The gold-facts oracle reads `gold_inds` keys by design and is a diagnostic only.
+- **Configuration:** `configs/generator_t5_base.toml`: `t5-base`, fp32, effective batch 16 (2 × 8 token-weighted gradient accumulation), learning rate 3e-4, warmup ratio 0.05, 10 epochs, 5 facts per input (gold plus same-record distractors, resampled each epoch), beam size 4, seed 42. The checkpoint was selected by dev execution accuracy with retrieved inputs.
+- **Command (Kaggle):** `papermill notebooks/11_program_generator.ipynb /kaggle/working/11_program_generator_executed.ipynb --log-output --cwd notebooks -k python3`
+- **Code state and environment:** commit `5f10139`; Python 3.13.15, torch 2.11.0+cu128, transformers 5.16.1, Tesla T4 (Kaggle). Peak GPU memory 9.55 GB. About 580 s of training and 3 min of dev decoding per epoch; 7,651 s (2.1 h) for 10 epochs.
+- **Input lengths:** 36/6,251 train and 14/883 dev retrieved sources exceed 512 tokens and are truncated; targets are at most 50 tokens (limit 64).
+- **Training history (dev retrieved execution correct of 883):** 299, 373, 437, 455, 488, 494, 508, 501, **523 (epoch 9, selected)**, 515. Training loss fell from 1.342 to 0.132.
+- **Observed dev results (selected checkpoint):**
+
+  | Condition | Execution correct | Execution accuracy | Program accuracy | Invalid rate | Operand grounding |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | Retrieved top 5 | 523 | 0.5923 | 0.5561 | 0.0079 | 0.9704 |
+  | Gold-facts oracle | 578 | 0.6546 | 0.6183 | 0.0079 | 0.9755 |
+  | Reference: Notebook 08 arithmetic | 35 | 0.0396 | — | — | — |
+
+  The normal-approximation 95% interval for the retrieved condition is about 0.560–0.625. Per record: 494 are correct in both conditions, 29 only with retrieved inputs, and 84 only with gold facts. 32 retrieved-condition answers are execution-correct but not symbolically equivalent to the gold program.
+- **Post-hoc breakdown (execution accuracy, retrieved / oracle):** 1-step programs (523) 0.6558 / 0.7208; 2-step (287) 0.5540 / 0.6341; 3+-step (73) 0.2877 / 0.2603. Single gold fact (416) 0.6274 / 0.6947; 2+ gold facts (467) 0.5610 / 0.6188. All gold facts in the top 5 (768) 0.6393 / 0.6979; not all (115) 0.2783 / 0.3652.
+- **Verification:** the executed notebook's cell sources are identical to `5f10139` and contain no error outputs. Re-scoring both downloaded prediction files locally, with `execute_program`, `compare_execution`, `compare_programs` and `operand_grounding` on rebuilt inputs, reproduced every metric and breakdown above. The downloaded checkpoint regenerated the first 16 retrieved dev predictions exactly on CPU.
+- **Artifacts (ignored by Git):** `models/generator-t5-base-dev-v1/best/` (`model.safetensors` SHA-256 `c9c5c8cc9ac46a72627d47bd974307240fbcb30cb3ef80bb0f48cde9496ca945`), `models/generator-t5-base-dev-v1/history.json`, and `data/processed/generator-t5-base-dev-v1_dev_{retrieved,gold_facts_oracle}_predictions.jsonl`. The executed notebook is committed.
+- **Limitations:** the checkpoint was selected on dev and is also reported on dev; epochs 7–10 span about 2.5 points, so the result is somewhat optimistic. This is one seed, one GPU type, and untuned FinEvidence hyperparameters. Oracle inputs average about 2 facts while training used 5, so the oracle differs in input distribution, not only in evidence quality. The breakdowns are correlations, not causal error categories. The Notebook 10 retriever checkpoint was not kept, so test-time retrieval in M4 requires re-running Notebook 10 at `7028afc`.
+- **Decision:** accept the retriever + generator pipeline as the M3 candidate. The M3 exit condition (baseline and candidate run under comparable conditions with observed results) is met on dev. M4 should start with categorized error analysis of the 360 retrieved-condition errors.
