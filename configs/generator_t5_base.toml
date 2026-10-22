@@ -16,7 +16,10 @@ max_target_length = 64
 [training]
 facts_per_input = 5
 epochs = 10
+# Effective batch per optimizer step. It is processed as batch_size / micro_batch_size
+# gradient-accumulation chunks: the first T4 run went out of memory with all 16 at once.
 batch_size = 16
+micro_batch_size = 8
 learning_rate = 3e-4
 warmup_ratio = 0.05
 # T5 is numerically unstable under fp16 and the T4 has no native bf16, so train in fp32.
@@ -24,6 +27,8 @@ mixed_precision = false
 
 [generation]
 num_beams = 4
+# Beam search keeps num_beams copies of each input, so decode in smaller batches.
+eval_batch_size = 16
 
 [inputs]
 # Notebook 10 dev rankings (commit 7028afc). Override the path with FINEVIDENCE_RANKINGS_PATH.

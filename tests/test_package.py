@@ -629,6 +629,7 @@ def test_generator_config_loads_with_overrides_and_rejects_bad_values(tmp_path) 
     config = load_generator_config(path, environment={})
     assert config.pretrained_name == "t5-base" and config.facts_per_input == 5
     assert not config.mixed_precision
+    assert (config.batch_size, config.micro_batch_size, config.eval_batch_size) == (16, 8, 16)
     moved = load_generator_config(
         path, environment={"FINEVIDENCE_RANKINGS_PATH": "/kaggle/input/r.jsonl"}
     )
@@ -637,6 +638,8 @@ def test_generator_config_loads_with_overrides_and_rejects_bad_values(tmp_path) 
     for old, new in [
         ('evaluation_split = "dev"', 'evaluation_split = "test"'),
         ("num_beams = 4", "num_beams = 0"),
+        ("micro_batch_size = 8", "micro_batch_size = 5"),
+        ("eval_batch_size = 16", "eval_batch_size = 0"),
         ("mixed_precision = false", 'mixed_precision = "no"'),
         ('rankings_sha256 = "d6', 'rankings_sha256 = "XX'),
     ]:
