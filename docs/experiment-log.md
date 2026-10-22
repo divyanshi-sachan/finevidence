@@ -129,3 +129,19 @@
 - **Artifacts (ignored by Git):** `models/generator-t5-base-dev-v1/best/` (`model.safetensors` SHA-256 `c9c5c8cc9ac46a72627d47bd974307240fbcb30cb3ef80bb0f48cde9496ca945`), `models/generator-t5-base-dev-v1/history.json`, and `data/processed/generator-t5-base-dev-v1_dev_{retrieved,gold_facts_oracle}_predictions.jsonl`. The executed notebook is committed.
 - **Limitations:** the checkpoint was selected on dev and is also reported on dev; epochs 7–10 span about 2.5 points, so the result is somewhat optimistic. This is one seed, one GPU type, and untuned FinEvidence hyperparameters. Oracle inputs average about 2 facts while training used 5, so the oracle differs in input distribution, not only in evidence quality. The breakdowns are correlations, not causal error categories. The Notebook 10 retriever checkpoint was not kept, so test-time retrieval in M4 requires re-running Notebook 10 at `7028afc`.
 - **Decision:** accept the retriever + generator pipeline as the M3 candidate. The M3 exit condition (baseline and candidate run under comparable conditions with observed results) is met on dev. M4 should start with categorized error analysis of the 360 retrieved-condition errors.
+
+## 2026-10-22 — M1–M3 audit: split statistics, privacy scan, result uncertainty (Notebook 12)
+
+- **Question:** Do the splits differ statistically, does the report text contain personal data, and how certain are the M3 dev comparisons?
+- **Data:** pinned public train, dev and test files (SHA-256 verified). Input-side statistics and the privacy scan cover all splits. Label-side statistics are train vs dev only; no new test-label statistic was computed. M3 uncertainty uses the saved dev prediction artifacts of Notebooks 08 and 11.
+- **Command:** `.venv/bin/jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=900 notebooks/12_milestone_audit_statistics_privacy.ipynb`; seed 42 for all resampling.
+- **Observed results:**
+  - KS D ≤ 0.077 for all input features. The largest detectable shifts are train vs dev in sentences per report (D = 0.075, p = 0.0003) and train vs test in table rows (D = 0.077, p < 0.0001).
+  - Train vs dev label distributions: smallest chi-square p = 0.074; Cramér's V ≤ 0.035. 77.0% of train questions mention a year.
+  - Privacy: 0 SSN-like strings; 1 email (test, corporate); 35 phone-pattern matches (21 space-separated table figures, 14 formatted, corporate in the examples inspected); 158 URLs; 2 report pages naming individuals.
+  - Bootstrap 95% CIs for dev execution accuracy: conservative arithmetic 0.0396 [0.0272, 0.0532]; generator, retrieved 0.5923 [0.5606, 0.6251]; oracle 0.6546 [0.6229, 0.6852].
+  - McNemar tests: generator vs arithmetic 493 vs 5 discordant records (p ≈ 6e-139); oracle vs retrieved 84 vs 29 (p ≈ 2e-7).
+- **Re-executions in the same audit:** Notebook 07 re-ran cleanly; it reproduced 3/871 with a byte-identical prediction file, which resolves an earlier stale cell. Notebooks 01 and 02 were re-executed after replacing an absolute local path in their outputs with a repository-relative one. Notebook 02's parser-coverage cell now shows 6,251/883/1,147, because it uses the parser extended in Notebook 04; the original narrower-grammar counts stay recorded in `m2-data-findings.md`. No other Notebook 02 output changed.
+- **External verification:** FinQA repository `LICENSE` (MIT) at the pinned commit; FinQA paper provenance, splits, human performance and published dev/test results ([research-notes.md](research-notes.md)).
+- **Limitations:** the intervals do not cover checkpoint selection, seed or hardware variance; the privacy scan is pattern-based.
+- **Decision:** M2's statistical-analysis and privacy deliverables are complete; the M1 success criteria now carry numeric targets fixed before any test use.

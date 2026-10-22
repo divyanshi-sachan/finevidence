@@ -1,5 +1,0 @@
-# Copy and adapt for a real experiment. Values are intentionally not benchmark claims.
-seed = 42
-dataset_root = "data/processed/finqa"
-split = "validation"
-experiment_name = "baseline-example"
