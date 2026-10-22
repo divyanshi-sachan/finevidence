@@ -1,11 +1,15 @@
+import hashlib
+import io
 import json
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
 from finevidence import __version__
 from finevidence.data import (
     FORBIDDEN_INFERENCE_FIELDS,
+    acquisition,
     assert_inference_safe,
     audit_record_annotations,
     build_structured_input,
@@ -34,7 +38,11 @@ from finevidence.reasoning import (
     parse_numeric_candidate,
     reason_over_candidates,
 )
-from finevidence.retrieval import build_evidence_segments, segment_numeric_candidates
+from finevidence.retrieval import (
+    build_evidence_segments,
+    load_retriever_config,
+    segment_numeric_candidates,
+)
 
 
 def test_package_imports() -> None:
@@ -423,3 +431,63 @@ def test_compare_programs_rejects_order_tokens_and_invalid_predictions() -> None
     assert compare_programs(None, gold).reason == "prediction is unavailable"
     with pytest.raises(ValueError):
         compare_programs(gold, "broken(")
+
+
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_retriever_config_file_loads_and_model_dir_can_be_overridden() -> None:
+    path = REPOSITORY_ROOT / "configs" / "retriever_bert_base.toml"
+    config = load_retriever_config(path, environment={})
+    assert config.pretrained_name == "bert-base-uncased"
+    assert config.evaluation_split == "dev" and config.include_header_row
+    assert config.model_dir == Path("models/retriever-bert-base-dev-v1")
+    drive = load_retriever_config(path, environment={"FINEVIDENCE_MODEL_DIR": "/content/drive/x"})
+    assert drive.model_dir == Path("/content/drive/x")
+
+
+def test_retriever_config_rejects_test_split_and_invalid_values(tmp_path) -> None:
+    text = (REPOSITORY_ROOT / "configs" / "retriever_bert_base.toml").read_text()
+    for old, new in [
+        ('evaluation_split = "dev"', 'evaluation_split = "test"'),
+        ("negatives_per_positive = 3", "negatives_per_positive = 0"),
+        ('negative_sampling = "random"', 'negative_sampling = "gold"'),
+    ]:
+        path = tmp_path / "bad.toml"
+        path.write_text(text.replace(old, new))
+        with pytest.raises(ValueError):
+            load_retriever_config(path, environment={})
+
+
+def _fake_opener(payload: bytes):
+    calls = []
+
+    def opener(url: str):
+        calls.append(url)
+        return io.BytesIO(payload)
+
+    return opener, calls
+
+
+def test_download_verifies_checksum_and_never_overwrites(tmp_path, monkeypatch) -> None:
+    payload = b"[]"
+    monkeypatch.setitem(acquisition.PINNED_SHA256, "dev", hashlib.sha256(payload).hexdigest())
+    opener, calls = _fake_opener(payload)
+
+    states = acquisition.download_finqa_splits(tmp_path, ["dev"], opener=opener)
+    again = acquisition.download_finqa_splits(tmp_path, ["dev"], opener=opener)
+
+    assert states == {"dev": "downloaded; verified"}
+    assert again == {"dev": "existing; verified, not overwritten"}
+    assert len(calls) == 1 and acquisition.FINQA_REVISION in calls[0]
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["dev.json"]
+
+
+def test_download_rejects_checksum_mismatch_without_leaving_files(tmp_path) -> None:
+    opener, _ = _fake_opener(b"[]")
+    with pytest.raises(ValueError, match="SHA-256"):
+        acquisition.download_finqa_splits(tmp_path, ["train"], opener=opener)
+    assert list(tmp_path.iterdir()) == []
+    with pytest.raises(ValueError, match="unknown"):
+        acquisition.download_finqa_splits(tmp_path, ["private_test"], opener=opener)
+    assert acquisition.DEVELOPMENT_SPLITS == ("train", "dev")

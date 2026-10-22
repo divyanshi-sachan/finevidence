@@ -1,0 +1,31 @@
+# Notebook 10: cross-encoder evidence retriever. Planned settings, not results.
+# Model, negatives, top-n, sequence length, batch size and learning rate follow the
+# official FinQA code/retriever/config.py at the pinned commit. Epochs differ on purpose
+# (official: 100); the checkpoint is chosen on dev retrieval recall. Test is not loaded.
+experiment_name = "retriever-bert-base-dev-v1"
+seed = 42
+dataset_root = "data/raw"
+train_split = "train"
+evaluation_split = "dev"
+
+[model]
+pretrained_name = "bert-base-uncased"
+max_seq_length = 512
+
+[training]
+negatives_per_positive = 3
+negative_sampling = "random"
+epochs = 5
+batch_size = 16
+learning_rate = 2e-5
+warmup_ratio = 0.1
+include_header_row = true
+
+[evaluation]
+recall_k = [1, 3, 5, 10]
+top_n_for_generator = 5
+
+[output]
+# Ignored by Git; override with FINEVIDENCE_MODEL_DIR (e.g. a mounted Drive path).
+model_dir = "models/retriever-bert-base-dev-v1"
+predictions_path = "data/processed/retriever_bert_base_dev_rankings.jsonl"

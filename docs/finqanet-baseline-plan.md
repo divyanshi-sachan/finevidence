@@ -53,7 +53,7 @@ This mirrors the two-stage design of the official FinQA code at the pinned commi
 | --- | --- | --- |
 | 1 ✅ | `src/finevidence/retrieval/segments.py`: `build_evidence_segments` (optional `table_0` header row) and `segment_numeric_candidates`, with tests. | **Done 2026-10-22.** Matches Notebook 08's former inline functions on all 7,134 train+dev records; the Notebook 08 re-run reproduces 32/871 display and 35/883 execution with byte-identical predictions. Notebooks 06, 07 and 09 keep their own table renderings, which differ, and are unchanged. |
 | 2 ✅ | `src/finevidence/evaluation/program.py`: symbolic program equivalence. | **Done 2026-10-22.** Gold-vs-gold holds for 6,251/6,251 train programs; agrees with the official `equal_program` on 9,392/9,392 argument-swapped train variants. |
-| 3 | Model dependencies as a separate `model` extra (`torch`, `transformers`), plus a Colab/Kaggle setup cell. | `pip install -e '.[model]'` works on a GPU runtime; the CPU dev checks are unaffected. |
+| 3 ✅ | Model dependencies as a separate `model` extra (`torch`, `transformers`); [gpu-setup.md](gpu-setup.md); `python -m finevidence.data.acquisition`; `configs/retriever_bert_base.toml` with the validated `load_retriever_config`. | **Done 2026-10-22 (CPU side).** The config loads and validates in tests; the acquisition helper verified local train/dev checksums. Not yet run on a GPU runtime. |
 | 4 | `notebooks/10_retriever_training.ipynb` and `configs/retriever_bert_base.toml`. | Dev any/all-gold recall@k versus TF-IDF; checkpoint saved under ignored `models/` or Drive. |
 | 5 | `notebooks/11_program_generator.ipynb` and `configs/generator_t5_base.toml`. | Dev execution accuracy, program accuracy, invalid and grounding rates, and the gold-facts oracle. |
 | 6 | Experiment-log entries for steps 4–5. | Commit hash, data checksums, seed, GPU type, wall-clock time, metrics, limitations. |
@@ -62,7 +62,7 @@ M3 exits after step 5: the baseline and at least one candidate have been run und
 
 ## Reproducibility on Colab/Kaggle
 
-- Clone the repository at a recorded commit, run `pip install -e '.[model]'`, and download the data with Notebook 02. Verify the SHA-256 checksums against [dataset-card.md](dataset-card.md).
+- Follow [gpu-setup.md](gpu-setup.md): clone at a recorded commit, `pip install -e '.[model,research]'`, then `python -m finevidence.data.acquisition`, which downloads train/dev only and verifies their checksums.
 - Fix seeds in Python, NumPy and torch, and log `torch.backends.cudnn` determinism settings. Record the GPU model, because results can vary across hardware.
 - Keep checkpoints and predictions out of Git: use ignored `models/` and `data/processed/`, or a Drive path set by an environment variable. Log each artifact's path and size.
 - Training time and cost are recorded once observed; this plan does not estimate them.

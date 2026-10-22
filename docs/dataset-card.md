@@ -2,7 +2,7 @@
 
 ## Source and access
 
-The public splits were downloaded on 2026-10-20 from the official [FinQA repository](https://github.com/czyssrs/FinQA), pinned to commit `0f16e2867befa6840783e58be38c9efb9229d742`. The acquisition workflow lives in [Notebook 02](../notebooks/02_finQA_eda.ipynb): it uses commit-pinned raw GitHub URLs, refuses to overwrite existing files, parses JSON before the final move, and reports SHA-256 checksums.
+The public splits were downloaded on 2026-10-20 from the official [FinQA repository](https://github.com/czyssrs/FinQA), pinned to commit `0f16e2867befa6840783e58be38c9efb9229d742`. The acquisition workflow lives in [Notebook 02](../notebooks/02_finQA_eda.ipynb): it uses commit-pinned raw GitHub URLs, refuses to overwrite existing files, parses JSON before the final move, and reports SHA-256 checksums. For non-notebook runtimes such as Colab or Kaggle, `python -m finevidence.data.acquisition` applies the same rules, verifies the SHA-256 values below, and fetches only train and dev unless `--include-test` is passed.
 
 | Split | Source file | Records | Bytes | SHA-256 |
 | --- | --- | ---: | ---: | --- |

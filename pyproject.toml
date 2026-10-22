@@ -25,6 +25,13 @@ research = [
   "scikit-learn>=1.4",
 ]
 
+# GPU model training (Notebooks 10-11). Kept separate so CPU setup and tests stay light.
+# Lower bounds only: Colab/Kaggle ship CUDA builds of torch that should not be replaced.
+model = [
+  "torch>=2.2",
+  "transformers>=4.40",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/finevidence"]
 

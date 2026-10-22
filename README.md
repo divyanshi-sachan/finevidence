@@ -27,6 +27,10 @@ pytest
 
 Run `ruff format .` only when you intend to apply formatting changes.
 
+## GPU training runtime
+
+Model training (Notebooks 10–11) uses the separate `model` extra (`torch`, `transformers`) on a CUDA GPU. See [docs/gpu-setup.md](docs/gpu-setup.md) for Colab/Kaggle setup, data acquisition with `python -m finevidence.data.acquisition`, checkpoint persistence, and environment recording.
+
 ## Research notebooks
 
 Install the `research` extra above, then launch JupyterLab from the repository root:
