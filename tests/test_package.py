@@ -40,7 +40,11 @@ from finevidence.reasoning import (
 )
 from finevidence.retrieval import (
     build_evidence_segments,
+    build_ranking_pairs,
+    build_training_pairs,
     load_retriever_config,
+    rank_keys,
+    sample_epoch_pairs,
     segment_numeric_candidates,
 )
 
@@ -491,3 +495,54 @@ def test_download_rejects_checksum_mismatch_without_leaving_files(tmp_path) -> N
     with pytest.raises(ValueError, match="unknown"):
         acquisition.download_finqa_splits(tmp_path, ["private_test"], opener=opener)
     assert acquisition.DEVELOPMENT_SPLITS == ("train", "dev")
+
+
+def _pair_record(record_id: str, gold: dict) -> dict:
+    record = _segment_record()
+    record["id"] = record_id
+    record["qa"] = {**record["qa"], "gold_inds": gold}
+    return record
+
+
+def test_ranking_pairs_render_header_paired_rows_without_annotations() -> None:
+    pairs = build_ranking_pairs(_pair_record("A", {"table_1": "SENTINEL gold text"}))
+
+    assert [p.key for p in pairs] == ["table_0", "table_1", "text_0", "text_1"]
+    assert pairs[0].text == "header:  | 2020 | 2019"
+    assert pairs[1].text == "row: revenue | 2020: $ 1250 | 2019: ( 100 )"
+    assert all(p.label is None and "SENTINEL" not in p.text for p in pairs)
+
+
+def test_training_pairs_label_by_key_and_count_unmatched_gold_keys() -> None:
+    record = _pair_record("A", {"table_1": "annotated row text", "text_-1": "x"})
+    positives, negatives, unmatched = build_training_pairs([record])
+
+    assert [(p.key, p.label) for p in positives] == [("table_1", 1)]
+    assert positives[0].text == "row: revenue | 2020: $ 1250 | 2019: ( 100 )"
+    assert {p.key for p in negatives} == {"table_0", "text_0", "text_1"}
+    assert all(p.label == 0 for p in negatives)
+    assert unmatched == {"text_-1": 1}
+    _, without_header, header_unmatched = build_training_pairs(
+        [_pair_record("B", {"table_0": "h"})], include_header_row=False
+    )
+    assert header_unmatched == {"table_0": 1} and "table_0" not in {p.key for p in without_header}
+
+
+def test_epoch_sampling_is_seeded_resampled_and_bounded() -> None:
+    positives, negatives, _ = build_training_pairs(
+        [_pair_record(f"R{i}", {"text_0": "t"}) for i in range(4)]
+    )
+    first = sample_epoch_pairs(positives, negatives, negatives_per_positive=2, seed=42, epoch=0)
+    again = sample_epoch_pairs(positives, negatives, negatives_per_positive=2, seed=42, epoch=0)
+    second = sample_epoch_pairs(positives, negatives, negatives_per_positive=2, seed=42, epoch=1)
+
+    assert first == again and first != second
+    assert sum(p.label for p in first) == 4 and len(first) == 12
+    capped = sample_epoch_pairs(positives, negatives, negatives_per_positive=99, seed=1, epoch=0)
+    assert len(capped) == len(positives) + len(negatives)
+
+
+def test_rank_keys_orders_by_score_with_stable_ties() -> None:
+    assert rank_keys(["a", "b", "c"], [0.1, 0.9, 0.1]) == ["b", "a", "c"]
+    with pytest.raises(ValueError):
+        rank_keys(["a"], [])
