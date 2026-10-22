@@ -10,7 +10,9 @@ readme = "README.md"
 requires-python = ">=3.11,<3.14"
 license = { text = "MIT" }
 authors = [{ name = "FinEvidence contributors" }]
-dependencies = []
+# sympy: program accuracy needs symbolic equivalence, as in the official FinQA evaluator.
+# It is pure Python (plus mpmath) and downloads nothing at setup.
+dependencies = ["sympy>=1.12"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "ruff>=0.8"]

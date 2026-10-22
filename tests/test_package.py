@@ -20,6 +20,7 @@ from finevidence.evaluation import (
     ComparisonStatus,
     compare_display_answers,
     compare_execution,
+    compare_programs,
     gold_recall_at_k,
     parse_display_answer,
 )
@@ -397,3 +398,28 @@ def test_segment_numeric_candidates_skip_row_label_and_keep_provenance() -> None
     text_values = segment_numeric_candidates(sentence)
     assert [c.raw_value for c in text_values] == ["12.5%", "1,250", "2020"]
     assert text_values[0].is_percent and text_values[2].value is None
+
+
+def test_compare_programs_accepts_commutative_and_restructured_equivalents() -> None:
+    gold = "subtract(120, 100), divide(#0, 100)"
+    assert compare_programs(gold, gold).equivalent
+    assert compare_programs("add(5, 3), multiply(#0, 2)", "add(3, 5), multiply(2, #0)").equivalent
+    assert compare_programs(
+        "divide(120, 100), subtract(#0, 1)", "divide(120, 100), subtract(#0, 1)"
+    ).equivalent
+    assert compare_programs("table_max(revenue, none)", "table_max(revenue, none)").equivalent
+
+
+def test_compare_programs_rejects_order_tokens_and_invalid_predictions() -> None:
+    gold = "subtract(120, 100), divide(#0, 100)"
+    assert not compare_programs("subtract(100, 120), divide(#0, 100)", gold).equivalent
+    unknown = compare_programs("subtract(120, 99), divide(#0, 100)", gold)
+    assert not unknown.equivalent and "not in gold" in unknown.reason
+    # Tokens are matched verbatim, as in the official evaluator: 100 is not const_100.
+    assert not compare_programs("multiply(5, const_100)", "multiply(5, 100)").equivalent
+    assert not compare_programs("divide(#1, 100), subtract(120, 100)", gold).equivalent
+    assert not compare_programs("table_min(revenue, none)", "table_max(revenue, none)").equivalent
+    assert not compare_programs("not a program", gold).equivalent
+    assert compare_programs(None, gold).reason == "prediction is unavailable"
+    with pytest.raises(ValueError):
+        compare_programs(gold, "broken(")

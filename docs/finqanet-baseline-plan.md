@@ -39,7 +39,7 @@ This mirrors the two-stage design of the official FinQA code at the pinned commi
 | Metric | Definition | Status |
 | --- | --- | --- |
 | Execution accuracy, **primary** | `compare_execution` against `exe_ans`, all 883 dev records in the denominator. | Implemented and tested. |
-| Program accuracy | Symbolic equivalence with the gold program, as in the official evaluator. | **To implement**, with a justified `sympy` dependency and tests. |
+| Program accuracy | `compare_programs`: symbolic equivalence with the gold program, as in the official evaluator. | Implemented and tested (`sympy` core dependency). |
 | Retrieval any/all-gold recall@k | `gold_recall_at_k`, k ∈ {1, 3, 5, 10}, with multi-fact records reported separately. | Implemented and tested. |
 | Invalid-program rate | Share of generated programs that fail to parse or execute. | Planned. |
 | Operand grounding rate | Share of generated numeric literals present in the retrieved segments. | Planned. |
@@ -52,8 +52,8 @@ This mirrors the two-stage design of the official FinQA code at the pinned commi
 | Step | Deliverable | Exit evidence |
 | --- | --- | --- |
 | 1 ✅ | `src/finevidence/retrieval/segments.py`: `build_evidence_segments` (optional `table_0` header row) and `segment_numeric_candidates`, with tests. | **Done 2026-10-22.** Matches Notebook 08's former inline functions on all 7,134 train+dev records; the Notebook 08 re-run reproduces 32/871 display and 35/883 execution with byte-identical predictions. Notebooks 06, 07 and 09 keep their own table renderings, which differ, and are unchanged. |
-| 2 | `src/finevidence/evaluation/program.py`: symbolic program equivalence. | Tests; gold-vs-gold equivalence holds on train. |
-| 3 | Model dependencies as a separate `model` extra (`torch`, `transformers`, `sympy`), plus a Colab/Kaggle setup cell. | `pip install -e '.[model]'` works on a GPU runtime; the CPU dev checks are unaffected. |
+| 2 ✅ | `src/finevidence/evaluation/program.py`: symbolic program equivalence. | **Done 2026-10-22.** Gold-vs-gold holds for 6,251/6,251 train programs; agrees with the official `equal_program` on 9,392/9,392 argument-swapped train variants. |
+| 3 | Model dependencies as a separate `model` extra (`torch`, `transformers`), plus a Colab/Kaggle setup cell. | `pip install -e '.[model]'` works on a GPU runtime; the CPU dev checks are unaffected. |
 | 4 | `notebooks/10_retriever_training.ipynb` and `configs/retriever_bert_base.toml`. | Dev any/all-gold recall@k versus TF-IDF; checkpoint saved under ignored `models/` or Drive. |
 | 5 | `notebooks/11_program_generator.ipynb` and `configs/generator_t5_base.toml`. | Dev execution accuracy, program accuracy, invalid and grounding rates, and the gold-facts oracle. |
 | 6 | Experiment-log entries for steps 4–5. | Commit hash, data checksums, seed, GPU type, wall-clock time, metrics, limitations. |

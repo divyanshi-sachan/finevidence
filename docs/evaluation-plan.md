@@ -19,7 +19,7 @@ From M3 onward, the primary answer metric follows the official FinQA evaluator a
 - `finevidence.reasoning.execute_program` reimplements the official value rules on top of the non-executing parser, without `eval`. Program `%` literals are divided by 100, `const_m1` is −1, and table operations look up rows by their first cell. It reproduces `exe_ans` for 6,251/6,251 train and 883/883 dev gold programs ([Notebook 09](../notebooks/09_baseline_selection_inspection.ipynb)).
 - `finevidence.evaluation.compare_execution` applies the exact-equality rule.
 - The display-answer comparator below is kept as a secondary metric. Notebook 09 shows it accepts the gold executed value for only 2,203 of 6,083 train records with numeric `exe_ans`, because display answers are rounded and percentages are scaled by 100. Display accuracy should not be read as an upper-bounded reasoning score.
-- Program accuracy, meaning symbolic equivalence as in the official script, is not implemented yet.
+- Program accuracy: `finevidence.evaluation.compare_programs` mirrors the official `equal_program`. Each distinct literal/constant token of the gold program, and each whole table step, becomes a symbol. A prediction that uses any other token is wrong. Otherwise both programs are expanded and compared after `sympy.simplify`. Expressions are built from sympy objects, never by `sympify`-ing program text. Tokens match verbatim, so `100` and `const_100` are different. On train it holds gold-vs-gold for 6,251/6,251 programs and agrees with the official function on 9,392/9,392 argument-swapped variants (2026-10-22).
 - Retrieval is reported as any-gold and all-gold recall@k with `finevidence.evaluation.gold_recall_at_k`.
 
 ## Question-conditioned selection protocol

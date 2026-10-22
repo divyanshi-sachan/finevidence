@@ -64,3 +64,13 @@
 - **Equivalence check:** the package functions and the former inline functions produce identical segment keys, texts and parsed candidates for 7,134/7,134 train+dev records.
 - **Observed result:** 32/871 display-answer correct (0.036739) and 35/883 execution correct (0.039638). Answered 293/883. The prediction artifact `data/processed/conservative_arithmetic_dev_predictions.jsonl` is byte-identical to the previous run.
 - **Decision:** the refactor is behavior-preserving. Use `finevidence.retrieval` segments for the retriever work in Notebook 10, with `include_header_row=True` there, because some gold evidence references `table_0`.
+
+## 2026-10-22 — program-accuracy implementation check
+
+- **Question:** Does `compare_programs` reproduce the official FinQA program-accuracy convention?
+- **Data:** pinned public train split only; dev and test were not used.
+- **Method:** (1) compare every train gold program with itself; (2) for each non-table step of each train program, swap that step's two arguments and compare the variant with the gold program, using both `compare_programs` and the official `equal_program`. The official function was extracted by AST from `code/evaluate/evaluate.py` at the pinned commit and run in a scratch script outside the repository.
+- **Code state:** this check ran on the working tree that became the program-accuracy commit (`git log -- src/finevidence/evaluation/program.py`).
+- **Observed result:** gold-vs-gold equivalent for 6,251/6,251 programs (about 14 s on CPU). On 9,392 swapped variants, the two implementations agreed 9,392/9,392 times. Equivalent: add 1,512, multiply 567, divide 19, subtract 23. Not equivalent: divide 4,426, subtract 2,716, greater 124, exp 5. The few equivalent divide/subtract swaps are cases where swapping leaves the expression unchanged, such as identical arguments.
+- **Limitations:** swapped arguments test only one kind of perturbation. Agreement on generated programs is untested until a generator exists. Matching tokens verbatim (`100` ≠ `const_100`) follows the official script, even where the values are equal.
+- **Decision:** use `compare_programs` as the program-accuracy metric for Notebooks 10–11.

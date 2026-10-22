@@ -8,6 +8,7 @@ from .answers import (
     parse_display_answer,
 )
 from .execution import ExecutionComparison, compare_execution
+from .program import ProgramComparison, compare_programs
 from .retrieval import RetrievalRecall, gold_recall_at_k
 
 __all__ = [
@@ -15,9 +16,11 @@ __all__ = [
     "ComparisonStatus",
     "ExecutionComparison",
     "ParsedDisplayAnswer",
+    "ProgramComparison",
     "RetrievalRecall",
     "compare_display_answers",
     "compare_execution",
+    "compare_programs",
     "gold_recall_at_k",
     "parse_display_answer",
 ]
