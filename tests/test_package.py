@@ -26,7 +26,19 @@ from finevidence.evaluation import (
     compare_execution,
     compare_programs,
     gold_recall_at_k,
+    operand_grounding,
     parse_display_answer,
+)
+from finevidence.generation import (
+    build_oracle_examples,
+    build_retrieved_examples,
+    build_training_examples,
+    format_generator_source,
+    load_generator_config,
+    load_rankings,
+    score_program_prediction,
+    summarize_scores,
+    verify_rankings_file,
 )
 from finevidence.reasoning import (
     Intent,
@@ -546,3 +558,117 @@ def test_rank_keys_orders_by_score_with_stable_ties() -> None:
     assert rank_keys(["a", "b", "c"], [0.1, 0.9, 0.1]) == ["b", "a", "c"]
     with pytest.raises(ValueError):
         rank_keys(["a"], [])
+
+
+def _generator_record(record_id: str = "G") -> dict:
+    record = _pair_record(record_id, {"table_1": "SENTINEL annotated", "text_-1": "bad"})
+    record["qa"]["program"] = "subtract(1250, 100)"
+    return record
+
+
+def test_generator_source_format_numbers_facts() -> None:
+    assert format_generator_source("q?", ["a", "b"]) == "question: q? facts: [1] a [2] b"
+
+
+def test_training_examples_include_gold_and_seeded_distractors_without_annotated_text() -> None:
+    records = [_generator_record(f"G{i}") for i in range(3)]
+    first = build_training_examples(records, facts_per_input=3, seed=7)
+    again = build_training_examples(records, facts_per_input=3, seed=7)
+
+    assert first == again
+    for example in first:
+        assert "table_1" in example.fact_keys and len(example.fact_keys) == 3
+        assert "text_-1" not in example.fact_keys
+        assert example.target == "subtract(1250, 100)"
+        assert "SENTINEL" not in example.source and "row: revenue" in example.source
+
+
+def test_retrieved_examples_follow_ranking_and_never_read_gold() -> None:
+    record = _generator_record()
+    del record["qa"]["gold_inds"], record["qa"]["program"], record["qa"]["answer"]
+    ranking = {"G": ["text_1", "table_1", "text_0", "table_0"]}
+
+    example = build_retrieved_examples([record], ranking, facts_per_input=2)[0]
+    assert example.fact_keys == ("text_1", "table_1") and example.target is None
+    with pytest.raises(ValueError, match="unknown keys"):
+        build_retrieved_examples([record], {"G": ["text_9"]}, facts_per_input=1)
+
+
+def test_oracle_examples_use_only_valid_gold_keys() -> None:
+    example = build_oracle_examples([_generator_record()])[0]
+    assert example.fact_keys == ("table_1",)
+    assert example.source.endswith("[1] row: revenue | 2020: $ 1250 | 2019: ( 100 )")
+
+
+def test_load_rankings_rejects_malformed_and_duplicate_rows(tmp_path) -> None:
+    path = tmp_path / "rankings.jsonl"
+    path.write_text('{"id": "A", "ranked_keys": ["text_0"]}\n')
+    assert load_rankings(path) == {"A": ["text_0"]}
+    path.write_text('{"id": "A", "ranked_keys": []}\n{"id": "A", "ranked_keys": []}\n')
+    with pytest.raises(ValueError, match="duplicate"):
+        load_rankings(path)
+    path.write_text('{"id": "A"}\n')
+    with pytest.raises(ValueError, match="ranked_keys"):
+        load_rankings(path)
+
+
+def test_operand_grounding_counts_literals_against_fact_numbers() -> None:
+    facts = ["row: revenue | 2020: $ 1,250 | 2019: ( 100 )", "growth was 12.5% ."]
+    grounded = operand_grounding(
+        "subtract(1250, -100), divide(#0, 12.5%), multiply(#1, const_100)", facts
+    )
+    assert (grounded.literals, grounded.grounded, grounded.ungrounded) == (3, 3, ())
+    invented = operand_grounding("add(1250, 999)", facts)
+    assert invented.ungrounded == ("999",) and invented.grounded == 1
+    assert operand_grounding("table_sum(revenue, none)", facts).literals == 0
+    assert operand_grounding("not a program", facts) is None
+
+
+def test_generator_config_loads_with_overrides_and_rejects_bad_values(tmp_path) -> None:
+    path = REPOSITORY_ROOT / "configs" / "generator_t5_base.toml"
+    config = load_generator_config(path, environment={})
+    assert config.pretrained_name == "t5-base" and config.facts_per_input == 5
+    assert not config.mixed_precision
+    moved = load_generator_config(
+        path, environment={"FINEVIDENCE_RANKINGS_PATH": "/kaggle/input/r.jsonl"}
+    )
+    assert moved.rankings_path == Path("/kaggle/input/r.jsonl")
+    text = path.read_text()
+    for old, new in [
+        ('evaluation_split = "dev"', 'evaluation_split = "test"'),
+        ("num_beams = 4", "num_beams = 0"),
+        ("mixed_precision = false", 'mixed_precision = "no"'),
+        ('rankings_sha256 = "d6', 'rankings_sha256 = "XX'),
+    ]:
+        bad = tmp_path / "bad.toml"
+        bad.write_text(text.replace(old, new))
+        with pytest.raises(ValueError):
+            load_generator_config(bad, environment={})
+
+
+def test_verify_rankings_file_checks_sha256(tmp_path) -> None:
+    path = tmp_path / "r.jsonl"
+    path.write_bytes(b"x")
+    verify_rankings_file(path, hashlib.sha256(b"x").hexdigest())
+    with pytest.raises(ValueError, match="SHA-256"):
+        verify_rankings_file(path, "0" * 64)
+
+
+def test_score_program_prediction_combines_official_metrics() -> None:
+    record = _generator_record()
+    record["qa"]["exe_ans"] = 1150.0
+    facts = ["row: revenue | 2020: $ 1250 | 2019: ( 100 )"]
+
+    right = score_program_prediction(record, "subtract(1250, 100)", facts)
+    same_value = score_program_prediction(record, "add(1150, 0)", facts)
+    broken = score_program_prediction(record, "subtract(1250", facts)
+    missing = score_program_prediction(record, None, facts)
+
+    assert right.execution_correct and right.program_correct and right.grounded_literals == 2
+    assert same_value.execution_correct and not same_value.program_correct
+    assert same_value.literals == 2 and same_value.grounded_literals == 0
+    assert not broken.valid and not broken.execution_correct
+    summary = summarize_scores([right, same_value, broken, missing])
+    assert summary["execution_correct"] == 2 and summary["records"] == 4
+    assert summary["invalid_rate"] == 0.5 and summary["program_accuracy"] == 0.25
+    assert summary["operand_grounding_rate"] == 0.5

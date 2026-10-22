@@ -1,0 +1,36 @@
+# Notebook 11: seq2seq program generator over retrieved facts. Planned settings, not results.
+# Learning rate, epochs and beam size are FinEvidence choices (not taken from the official
+# FinQANet generator, which uses a BERT encoder with a pointer decoder). The checkpoint is
+# selected on dev execution accuracy with retrieved inputs. Test is not loaded.
+experiment_name = "generator-t5-base-dev-v1"
+seed = 42
+dataset_root = "data/raw"
+train_split = "train"
+evaluation_split = "dev"
+
+[model]
+pretrained_name = "t5-base"
+max_source_length = 512
+max_target_length = 64
+
+[training]
+facts_per_input = 5
+epochs = 10
+batch_size = 16
+learning_rate = 3e-4
+warmup_ratio = 0.05
+# T5 is numerically unstable under fp16 and the T4 has no native bf16, so train in fp32.
+mixed_precision = false
+
+[generation]
+num_beams = 4
+
+[inputs]
+# Notebook 10 dev rankings (commit 7028afc). Override the path with FINEVIDENCE_RANKINGS_PATH.
+rankings_path = "data/processed/retriever_bert_base_dev_rankings.jsonl"
+rankings_sha256 = "d6c31f86c1fd4ab0d68d2cb56996ffe9705fba7dfbfe62464fd7b0ea7bd562e6"
+
+[output]
+# Ignored by Git; override with FINEVIDENCE_MODEL_DIR (e.g. /kaggle/working/...).
+model_dir = "models/generator-t5-base-dev-v1"
+predictions_dir = "data/processed"
