@@ -13,8 +13,8 @@ FinEvidence follows the six-stage Industry Track. The detailed objectives, deliv
 
 ## Current stage
 
-**M1 — Problem Definition & Business Case** is active. No milestone deliverable has been accepted yet.
+**M3 — Baseline & Model Development** is active. M1 and M2 repository evidence exists, but formal milestone acceptance is still pending; the M2 license/permitted-use review and privacy assessment remain open. Three dev-only lexical/arithmetic runs are logged. [Notebook 09](../notebooks/09_baseline_selection_inspection.ipynb) adopted official execution accuracy as the primary metric and selected a FinQANet-style baseline.
 
 ## Immediate next task
 
-Write the M1 problem brief: identify the primary user, business decision or workflow to support, bounded NLP task, measurable success criteria, and feasibility assumptions. The brief must be reviewed before acquiring or modeling data for M2.
+Run Notebook 10 on a GPU runtime ([gpu-setup.md](gpu-setup.md)) to train and evaluate the retriever on dev, then build the program generator (Notebook 11) from the [FinQANet-style baseline plan](finqanet-baseline-plan.md). Steps 1–3 of that plan are done. Keep the official test split reserved for final reporting.

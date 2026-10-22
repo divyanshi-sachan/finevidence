@@ -1,0 +1,66 @@
+# GPU runtime setup (Colab, Kaggle, or local)
+
+Notebooks 10–11 train models and need a CUDA GPU. Everything else, including `pytest`, runs on CPU without the `model` extra. These steps have not yet been run on a hosted runtime; record the first run in the experiment log.
+
+## 1. Get the code at a recorded commit
+
+The runtime clones from `origin` (`https://github.com/divyanshi-sachan/finevidence.git`), so the commit you want must be pushed first. Use a specific commit rather than a moving branch, and write that hash into the experiment log.
+
+```python
+!git clone https://github.com/divyanshi-sachan/finevidence.git
+%cd finevidence
+!git checkout <commit-hash>
+```
+
+If the repository is private, store a fine-grained read-only token in the platform's secret store (Colab "Secrets", Kaggle "Add-ons → Secrets") and read it with the platform API at runtime. Never paste a token into a notebook cell, config file or URL that is saved with the notebook.
+
+## 2. Install
+
+```python
+!pip install -q -e '.[model,research]'
+```
+
+Colab and Kaggle already ship a CUDA build of `torch`, and the `model` extra only sets lower bounds, so pip should keep the existing build. If `import finevidence` fails right after an editable install, restart the runtime once and re-run from the `%cd` cell.
+
+## 3. Fetch and verify data
+
+```python
+!python -m finevidence.data.acquisition
+```
+
+This downloads only the commit-pinned `train` and `dev` splits, checks their SHA-256 values against [dataset-card.md](dataset-card.md), and never overwrites existing files. M3 development doesn't need the official test split, and it isn't downloaded unless you pass `--include-test`; reserve that for the final M4 run.
+
+## 4. Persist checkpoints outside the runtime
+
+Hosted runtimes are temporary. Point the model directory at persistent storage through an environment variable; it overrides `[output].model_dir` in `configs/retriever_bert_base.toml`.
+
+```python
+# Colab
+import os
+
+from google.colab import drive
+
+drive.mount("/content/drive")
+os.environ["FINEVIDENCE_MODEL_DIR"] = "/content/drive/MyDrive/finevidence/retriever-v1"
+```
+
+On Kaggle, use `/kaggle/working/...` and save the notebook version so the outputs are kept. Checkpoints and predictions must never be committed to Git.
+
+## 5. Record the environment
+
+The first cell of each training notebook should print, and the experiment log should record, the commit hash, Python, `torch` and `transformers` versions, `torch.cuda.get_device_name(0)`, the seed, and wall-clock training time.
+
+```python
+import platform
+import subprocess
+
+import torch
+import transformers
+
+commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True)
+print(commit.stdout.strip())
+print(platform.python_version(), torch.__version__, transformers.__version__)
+print(torch.cuda.is_available() and torch.cuda.get_device_name(0))
+```
+
+Results can differ slightly across GPU types and library versions even with fixed seeds, so compare runs only when their environment records match.

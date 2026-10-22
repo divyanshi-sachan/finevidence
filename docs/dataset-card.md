@@ -2,7 +2,7 @@
 
 ## Source and access
 
-The public splits were downloaded on 2026-10-20 from the official [FinQA repository](https://github.com/czyssrs/FinQA), pinned to commit `0f16e2867befa6840783e58be38c9efb9229d742`. The acquisition workflow lives in [Notebook 02](../notebooks/02_finQA_eda.ipynb): it uses commit-pinned raw GitHub URLs, refuses to overwrite existing files, parses JSON before the final move, and reports SHA-256 checksums.
+The public splits were downloaded on 2026-10-20 from the official [FinQA repository](https://github.com/czyssrs/FinQA), pinned to commit `0f16e2867befa6840783e58be38c9efb9229d742`. The acquisition workflow lives in [Notebook 02](../notebooks/02_finQA_eda.ipynb): it uses commit-pinned raw GitHub URLs, refuses to overwrite existing files, parses JSON before the final move, and reports SHA-256 checksums. For non-notebook runtimes such as Colab or Kaggle, `python -m finevidence.data.acquisition` applies the same rules, verifies the SHA-256 values below, and fetches only train and dev unless `--include-test` is passed.
 
 | Split | Source file | Records | Bytes | SHA-256 |
 | --- | --- | ---: | ---: | --- |
@@ -43,6 +43,10 @@ The release source and files are verified, but a legal interpretation of the rep
 ## Leakage prevention
 
 Preserve official train/dev/test assignments. Use train data to fit transformations, dev data for model/preprocessing decisions, and test data only for final reporting. Do not use test answers, programs, or gold evidence for training or selection. Keep split-overlap diagnostics in the experiment record and do not silently deduplicate benchmark records.
+
+The executed preprocessing analysis defined two safe representations: a structured payload containing only `id`, `question`, `table`, `pre_text`, and `post_text`, and a deterministic table-row rendering built from the raw table. Across all 8,281 public records, the structured payload preserved the raw table exactly and the rendering contained every non-empty raw table cell and header. This is a structural preservation check, not proof that a rendering retains every financial meaning.
+
+The official repository records a 2022 repair to its earlier `table_row_to_text` function: the original function leaked label information and overstated retriever results. FinEvidence must not reuse derived fields (`table_retrieved`, `text_retrieved`, `model_input`, or `tfidftopn`) as model inputs until their provenance is independently documented. The local analysis observed `model_input` key overlap with `gold_inds`; it is therefore explicitly excluded from answer-prediction inputs, rather than treated as neutral context.
 
 ## Limitations and unresolved questions
 

@@ -1,0 +1,12 @@
+# Notebook 09: train-only structure inspection for M3 baseline selection.
+# Dev is used only to validate the executor on gold programs and to re-score
+# existing dev prediction artifacts. The official test split is not loaded.
+seed = 42
+dataset_root = "data/raw"
+train_split = "train"
+evaluation_split = "dev"
+max_features = 50000
+ngram_min = 1
+ngram_max = 2
+recall_k = [1, 3, 5, 10]
+encoder_token_budget = 512

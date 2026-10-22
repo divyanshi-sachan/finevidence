@@ -27,6 +27,10 @@ pytest
 
 Run `ruff format .` only when you intend to apply formatting changes.
 
+## GPU training runtime
+
+Model training (Notebooks 10–11) uses the separate `model` extra (`torch`, `transformers`) on a CUDA GPU. See [docs/gpu-setup.md](docs/gpu-setup.md) for Colab/Kaggle setup, data acquisition with `python -m finevidence.data.acquisition`, checkpoint persistence, and environment recording.
+
 ## Research notebooks
 
 Install the `research` extra above, then launch JupyterLab from the repository root:
@@ -47,7 +51,7 @@ Run the executed EDA notebook afresh after a verified download:
 jupyter nbconvert --to notebook --execute --inplace notebooks/02_finQA_eda.ipynb
 ```
 
-The initial M1 scaffold is [notebooks/01_problem_and_dataset.ipynb](notebooks/01_problem_and_dataset.ipynb). The executed M2 audit is [notebooks/02_finQA_eda.ipynb](notebooks/02_finQA_eda.ipynb). The notebook sequence, expected milestones, and reproducibility standards are documented in [notebooks/README.md](notebooks/README.md). Notebooks that depend on later milestones are intentionally not pre-filled.
+The initial M1 scaffold is [notebooks/01_problem_and_dataset.ipynb](notebooks/01_problem_and_dataset.ipynb). The executed M2 audit is [notebooks/02_finQA_eda.ipynb](notebooks/02_finQA_eda.ipynb), followed by the [preprocessing analysis](notebooks/03_finqa_preprocessing_analysis.ipynb), [tested preprocessing implementation](notebooks/04_data_preprocessing.ipynb), dev-only lexical and arithmetic runs (Notebooks 06–08), and the [baseline-selection inspection](notebooks/09_baseline_selection_inspection.ipynb) that adopts official execution accuracy. The planned M3 baseline is in [docs/finqanet-baseline-plan.md](docs/finqanet-baseline-plan.md). The notebook sequence, expected milestones, and reproducibility standards are documented in [notebooks/README.md](notebooks/README.md). Notebooks that depend on later milestones are intentionally not pre-filled.
 
 ## Layout
 
