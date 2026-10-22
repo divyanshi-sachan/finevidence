@@ -15,7 +15,7 @@ Notebooks are core research deliverables. They document executed inspection and 
 | `07_question_conditioned_evidence_value_selection.ipynb` | M3 | Retrieve-then-select lexical run, evaluated on dev only. | Executed 2026-10-20. |
 | `08_conservative_numerical_reasoning.ipynb` | M3 | One-operation arithmetic over retrieved values, evaluated on dev only. | Executed 2026-10-20. |
 | `09_baseline_selection_inspection.ipynb` | M3 | Train-structure inspection, official execution-accuracy convention, re-scoring of 06–08. | Executed 2026-10-21. |
-| `10_retriever_training.ipynb` | M3 | Cross-encoder evidence retriever (GPU), dev recall@k against TF-IDF. | Written 2026-10-22; CPU smoke-tested only. Unexecuted in Git until a full GPU run. |
+| `10_retriever_training.ipynb` | M3 | Cross-encoder evidence retriever (GPU), dev recall@k against TF-IDF. | Executed on Kaggle T4 2026-10-22 (commit `7028afc`); results in the experiment log. The executed copy replaces the unexecuted one once it's downloaded. |
 | `11_program_generator.ipynb` | M3 | Program generator plus safe execution, dev execution/program accuracy. | Planned. |
 | `12_model_evaluation.ipynb` | M4 | Consistent comparison of approaches. | Create after comparable runs exist. |
 | `13_error_analysis.ipynb` | M4 | Incorrect predictions, failure categories, limitations, improvements. | Create after evaluation. |

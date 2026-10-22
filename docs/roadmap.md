@@ -17,4 +17,4 @@ FinEvidence follows the six-stage Industry Track. The detailed objectives, deliv
 
 ## Immediate next task
 
-Run Notebook 10 on a GPU runtime ([gpu-setup.md](gpu-setup.md)) to train and evaluate the retriever on dev, then build the program generator (Notebook 11) from the [FinQANet-style baseline plan](finqanet-baseline-plan.md). Steps 1–3 of that plan are done. Keep the official test split reserved for final reporting.
+Build and run the program generator (Notebook 11) from the [FinQANet-style baseline plan](finqanet-baseline-plan.md), using the Notebook 10 dev rankings (top 5) plus a gold-facts oracle. Steps 1–4 of that plan are done; the retriever reached dev all-gold recall@5 of 0.8698 vs 0.6602 for TF-IDF. Keep the official test split reserved for final reporting.

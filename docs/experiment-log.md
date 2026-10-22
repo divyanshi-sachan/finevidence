@@ -74,3 +74,26 @@
 - **Observed result:** gold-vs-gold equivalent for 6,251/6,251 programs (about 14 s on CPU). On 9,392 swapped variants, the two implementations agreed 9,392/9,392 times. Equivalent: add 1,512, multiply 567, divide 19, subtract 23. Not equivalent: divide 4,426, subtract 2,716, greater 124, exp 5. The few equivalent divide/subtract swaps are cases where swapping leaves the expression unchanged, such as identical arguments.
 - **Limitations:** swapped arguments test only one kind of perturbation. Agreement on generated programs is untested until a generator exists. Matching tokens verbatim (`100` ≠ `const_100`) follows the official script, even where the values are equal.
 - **Decision:** use `compare_programs` as the program-accuracy metric for Notebooks 10–11.
+
+## 2026-10-22 — cross-encoder evidence retriever, dev (Notebook 10)
+
+- **Question:** Does a cross-encoder trained on train `gold_inds` retrieve all gold facts more often than train-fitted TF-IDF on the same segment rendering?
+- **Dataset and split protocol:** pinned public FinQA train (fitting) and dev (checkpoint selection and reporting), both verified by SHA-256 through `finevidence.data.acquisition`. The official test split was not loaded. Prediction inputs used only `id`, `question`, `table`, `pre_text` and `post_text`. Dev `gold_inds` were read only after scoring, for recall.
+- **Configuration:** `configs/retriever_bert_base.toml`: `bert-base-uncased`, 3 random negatives per positive resampled every epoch, 5 epochs, batch size 16, learning rate 2e-5, warmup ratio 0.1, `max_seq_length` 512, header row included, seed 42. The checkpoint was selected by dev all-gold recall@5.
+- **Command (Kaggle):** `papermill notebooks/10_retriever_training.ipynb /kaggle/working/10_retriever_training_executed.ipynb --log-output --cwd notebooks -k python3`
+- **Code state and environment:** commit `7028afc`; Python 3.13.15, torch 2.11.0+cu128, transformers 5.16.1, Tesla T4 (Kaggle).
+- **Data sizes:** 6,251 train records → 10,691 positives, a 180,663-segment negative pool, and 42,764 pairs (2,673 steps) per epoch. The only unmatched train gold key is the flagged `text_-1`. Dev: 883 records, 26,834 segments (467 records have more than one gold fact).
+- **Training history (dev all-gold@5 / any-gold@5):** epoch 1 0.8539 / 0.9841; epoch 2 0.8686 / 0.9853; **epoch 3 0.8698 / 0.9887 (selected)**; epoch 4 0.8630 / 0.9819; epoch 5 0.8437 / 0.9751. Mean training loss fell from 0.2733 to 0.0667. About 300 s of training plus 40 s of dev ranking per epoch; 28 min 25 s in total.
+- **Observed dev recall (selected checkpoint vs TF-IDF):**
+
+  | k | TF-IDF any | TF-IDF all | TF-IDF all, multi-fact | Cross-encoder any | Cross-encoder all | Cross-encoder all, multi-fact |
+  | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+  | 1 | 0.5878 | 0.2922 | 0.0000 | 0.8947 | 0.4134 | 0.0000 |
+  | 3 | 0.8256 | 0.5345 | 0.2719 | 0.9728 | 0.8075 | 0.6724 |
+  | 5 | 0.9015 | 0.6602 | 0.4497 | 0.9887 | 0.8698 | 0.7709 |
+  | 10 | 0.9604 | 0.8414 | 0.7452 | 0.9943 | 0.9354 | 0.8865 |
+
+  At k = 5, records still missing at least one gold fact fall from about 300 to about 115 of 883. All-gold@1 for multi-fact records is 0 by construction.
+- **Artifacts (Kaggle `/kaggle/working`, not in Git):** checkpoint `retriever-bert-base-dev-v1/best`, `retriever-bert-base-dev-v1/history.json`, dev rankings `finevidence/data/processed/retriever_bert_base_dev_rankings.jsonl`, executed notebook `10_retriever_training_executed.ipynb`.
+- **Limitations:** the checkpoint was selected on dev and is also reported on dev, so these dev numbers are slightly optimistic. Epochs 2–4 are within 0.007 of each other, so the selection effect is small but nonzero. Unbiased retrieval numbers need the final held-out evaluation in M4. Dev all-gold recall fell after epoch 3 while training loss kept falling, which suggests overfitting with longer training. This is one seed and one GPU type. Recall measures evidence availability only, not answer correctness.
+- **Decision:** accept this retriever as the M3 stage 1. Feed the generator the top 5 segments (`top_n_for_generator = 5`). About 13% of dev records still lack a gold fact in the top 5, which caps end-to-end execution accuracy; the gold-facts oracle in Notebook 11 will separate that cap from generator errors.
