@@ -46,7 +46,17 @@ os.environ["FINEVIDENCE_MODEL_DIR"] = "/content/drive/MyDrive/finevidence/retrie
 
 On Kaggle, use `/kaggle/working/...` and save the notebook version so the outputs are kept. Checkpoints and predictions must never be committed to Git.
 
-## 5. Record the environment
+## 5. Run a training notebook with live progress
+
+Use papermill (installed by the `model` extra). It streams each cell's output while the run is in progress and saves the executed notebook at the end. Notebook 10 prints about 20 progress lines per epoch, showing step, loss, elapsed time and time left, plus an estimate for the remaining epochs after each one. It also rewrites `history.json` after every epoch.
+
+```python
+!papermill notebooks/10_retriever_training.ipynb /kaggle/working/10_retriever_training_executed.ipynb --log-output --cwd notebooks -k python3
+```
+
+`jupyter nbconvert --execute` also works, but it shows nothing until the whole notebook finishes.
+
+## 6. Record the environment
 
 The first cell of each training notebook should print, and the experiment log should record, the commit hash, Python, `torch` and `transformers` versions, `torch.cuda.get_device_name(0)`, the seed, and wall-clock training time.
 

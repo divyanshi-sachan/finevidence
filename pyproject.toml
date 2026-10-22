@@ -30,6 +30,8 @@ research = [
 model = [
   "torch>=2.3",  # torch.amp.GradScaler
   "transformers>=4.40",
+  # Headless notebook runs that stream cell output live and save the executed notebook.
+  "papermill>=2.5",
 ]
 
 [tool.hatch.build.targets.wheel]
