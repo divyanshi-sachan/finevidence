@@ -33,6 +33,7 @@ from finevidence.reasoning import (
     parse_numeric_candidate,
     reason_over_candidates,
 )
+from finevidence.retrieval import build_evidence_segments, segment_numeric_candidates
 
 
 def test_package_imports() -> None:
@@ -364,3 +365,35 @@ def test_gold_recall_at_k_reports_any_and_all_hits() -> None:
     assert recall.any_gold and not recall.all_gold and recall.gold_count == 2
     with pytest.raises(ValueError):
         gold_recall_at_k(["table_1"], set(), 1)
+
+
+def _segment_record() -> dict:
+    return {
+        "id": "X/2020/page_1.pdf-1",
+        "pre_text": ["revenue grew 12.5% to $ 1,250 million in 2020 ."],
+        "post_text": ["no other changes ."],
+        "table": [["", "2020", "2019"], ["revenue", "$ 1250", "( 100 )"]],
+        "qa": {"question": "what was the change?", "answer": "SENTINEL", "gold_inds": {}},
+    }
+
+
+def test_build_evidence_segments_uses_gold_key_convention_and_no_annotations() -> None:
+    segments = build_evidence_segments(_segment_record())
+
+    assert [s.key for s in segments] == ["table_1", "text_0", "text_1"]
+    assert segments[0].text == "revenue | $ 1250 | ( 100 )"
+    assert segments[0].header == ("", "2020", "2019")
+    assert all("SENTINEL" not in s.text for s in segments)
+    with_header = build_evidence_segments(_segment_record(), include_header_row=True)
+    assert with_header[0].key == "table_0" and with_header[1].key == "table_1"
+
+
+def test_segment_numeric_candidates_skip_row_label_and_keep_provenance() -> None:
+    table_row, sentence, _ = build_evidence_segments(_segment_record())
+
+    table_values = segment_numeric_candidates(table_row)
+    assert [c.raw_value for c in table_values] == ["$ 1250", "( 100 )"]
+    assert table_values[1].value == -100 and table_values[0].source_id == "table_1"
+    text_values = segment_numeric_candidates(sentence)
+    assert [c.raw_value for c in text_values] == ["12.5%", "1,250", "2020"]
+    assert text_values[0].is_percent and text_values[2].value is None

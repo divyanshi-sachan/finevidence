@@ -51,7 +51,7 @@ This mirrors the two-stage design of the official FinQA code at the pinned commi
 
 | Step | Deliverable | Exit evidence |
 | --- | --- | --- |
-| 1 | Move segment construction from Notebooks 06–09 into `src/finevidence/retrieval/segments.py`, with tests. | Notebook 08 re-run reproduces 32/871 display and 35/883 execution. |
+| 1 ✅ | `src/finevidence/retrieval/segments.py`: `build_evidence_segments` (optional `table_0` header row) and `segment_numeric_candidates`, with tests. | **Done 2026-10-22.** Matches Notebook 08's former inline functions on all 7,134 train+dev records; the Notebook 08 re-run reproduces 32/871 display and 35/883 execution with byte-identical predictions. Notebooks 06, 07 and 09 keep their own table renderings, which differ, and are unchanged. |
 | 2 | `src/finevidence/evaluation/program.py`: symbolic program equivalence. | Tests; gold-vs-gold equivalence holds on train. |
 | 3 | Model dependencies as a separate `model` extra (`torch`, `transformers`, `sympy`), plus a Colab/Kaggle setup cell. | `pip install -e '.[model]'` works on a GPU runtime; the CPU dev checks are unaffected. |
 | 4 | `notebooks/10_retriever_training.ipynb` and `configs/retriever_bert_base.toml`. | Dev any/all-gold recall@k versus TF-IDF; checkpoint saved under ignored `models/` or Drive. |

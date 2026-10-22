@@ -55,3 +55,12 @@
 - **Re-scored dev execution accuracy (denominator 883):** lexical value selection 5 (0.566%), question-conditioned selection 6 (0.680%), conservative arithmetic 35 (3.964%). The display-answer results in the entries above are unchanged.
 - **Limitations:** literal-provenance matching ignores sign and uses six-decimal rounding. Context lengths are whitespace tokens, a lower bound on sub-word length. TF-IDF recall was measured in-sample on train, so it is a diagnostic only. Program accuracy is not implemented.
 - **Decision:** adopt execution accuracy as the primary metric and build the FinQANet-style retriever + program-generator baseline described in `docs/finqanet-baseline-plan.md`.
+
+## 2026-10-22 — Notebook 08 refactor reproduction check
+
+- **Question:** Does moving segment construction and candidate parsing into `finevidence.retrieval` preserve the conservative-arithmetic results?
+- **Change:** Notebook 08 now imports `build_evidence_segments` and `segment_numeric_candidates` instead of defining them inline. Its prediction logic, configuration (`configs/conservative_arithmetic.toml`) and split protocol are unchanged. The official test split was not loaded.
+- **Command:** `.venv/bin/jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=600 notebooks/08_conservative_numerical_reasoning.ipynb`
+- **Equivalence check:** the package functions and the former inline functions produce identical segment keys, texts and parsed candidates for 7,134/7,134 train+dev records.
+- **Observed result:** 32/871 display-answer correct (0.036739) and 35/883 execution correct (0.039638). Answered 293/883. The prediction artifact `data/processed/conservative_arithmetic_dev_predictions.jsonl` is byte-identical to the previous run.
+- **Decision:** the refactor is behavior-preserving. Use `finevidence.retrieval` segments for the retriever work in Notebook 10, with `include_header_row=True` there, because some gold evidence references `table_0`.
