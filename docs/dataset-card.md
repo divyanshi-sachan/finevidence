@@ -2,6 +2,8 @@
 
 ## Source and access
 
+**Provenance (verified, FinQA paper §4.1–4.4):** FinQA questions were written by eleven US-based finance experts (CPAs, MBAs and similar) over pages from publicly available earnings reports of S&P 500 companies, 1999–2019, as collected in the FinTabNet dataset. The paper reports 8,281 examples over 2,789 report pages, split 6,251 / 883 / 1,147 (75% / 10% / 15%), and states that the three splits share no input reports.
+
 The public splits were downloaded on 2026-10-20 from the official [FinQA repository](https://github.com/czyssrs/FinQA), pinned to commit `0f16e2867befa6840783e58be38c9efb9229d742`. The acquisition workflow lives in [Notebook 02](../notebooks/02_finQA_eda.ipynb): it uses commit-pinned raw GitHub URLs, refuses to overwrite existing files, parses JSON before the final move, and reports SHA-256 checksums. For non-notebook runtimes such as Colab or Kaggle, `python -m finevidence.data.acquisition` applies the same rules, verifies the SHA-256 values below, and fetches only train and dev unless `--include-test` is passed.
 
 | Split | Source file | Records | Bytes | SHA-256 |
@@ -36,9 +38,35 @@ The executed audit found no empty IDs, duplicate IDs within a split, empty quest
 
 Some fields are incompletely populated: `answer` is empty for 48 train, 12 dev, and 14 test records, while `exe_ans` remains present; `explanation` is empty for 5,276 train, 742 dev, and 970 test records. These fields need explicit handling rules in preprocessing rather than record deletion. See [m2-data-findings.md](m2-data-findings.md) for the full measured report.
 
-## Licensing, privacy, and use
+## Licensing and permitted use
 
-The release source and files are verified, but a legal interpretation of the repository's license or permitted-use terms is not yet recorded. Verify those terms before external redistribution, deployment, or any use beyond the approved research scope. The data contains financial-report content; raw files, derived artifacts, and potentially sensitive material remain outside Git. The prototype must not provide financial advice or investment recommendations.
+- **Verified source facts (2026-10-22):** at the pinned commit, the FinQA repository's `LICENSE` file is the MIT License (copyright 2021 Zhiyu Chen). The FinQA paper (§8) states that the underlying FinTabNet data is available under the CDLA-Permissive license, which permits creating and publishing additional annotations.
+- **Project decision:** using the public splits for this non-commercial research project is within these terms. FinEvidence still does not redistribute the data: raw files and derived artifacts stay in ignored directories, and the repository contains only code, configuration and aggregate results. If the repository, a model or the demo is shared beyond the project, keep the MIT notice and the CDLA attribution with any data-derived artifact.
+- **Limitation:** this is a record of the published terms, not legal advice. Commercial or production use would need its own review.
+
+## Privacy assessment
+
+**Measured in [Notebook 12](../notebooks/12_milestone_audit_statistics_privacy.ipynb)**, which scans report text in all splits and reads no answers or programs:
+
+| Pattern | Train | Dev | Test | Interpretation |
+| --- | ---: | ---: | ---: | --- |
+| SSN-like strings | 0 | 0 | 0 | None found. |
+| Email addresses | 0 | 0 | 1 | A corporate shareholder-services address. |
+| Phone-number pattern | 31 | 0 | 4 | 21 of 35 are space-separated table figures (false positives); the rest, in the examples inspected, are corporate shareholder-service numbers. |
+| URLs | 114 | 32 | 12 | Web addresses printed in the reports. |
+| Honorific + name | 14 | 0 | 0 | Two report pages name individuals (executives and related persons) in public compensation or related-party disclosures. |
+
+**Assessment:** the corpus is public corporate disclosure. It contains limited personal data, namely named executives in public filings, and no records about private individuals were found. Regular expressions miss names without honorifics, so this is a screen, not a complete audit.
+
+**Handling and retention:**
+- Raw data and derived artifacts stay in Git-ignored `data/` and `models/` directories and are never committed.
+- The data is not used to profile or analyse individuals.
+- The prototype shows report text only as evidence for the question being answered.
+- Local copies are kept for the duration of the project and can be deleted and re-downloaded from the pinned commit (`python -m finevidence.data.acquisition`).
+
+## Use restrictions
+
+The prototype must not provide financial advice or investment recommendations. The paper's own guidance is that such systems augment human decision-making in financial analysis and do not replace human experts (§8).
 
 ## Leakage prevention
 
@@ -48,6 +76,12 @@ The executed preprocessing analysis defined two safe representations: a structur
 
 The official repository records a 2022 repair to its earlier `table_row_to_text` function: the original function leaked label information and overstated retriever results. FinEvidence must not reuse derived fields (`table_retrieved`, `text_retrieved`, `model_input`, or `tfidftopn`) as model inputs until their provenance is independently documented. The local analysis observed `model_input` key overlap with `gold_inds`; it is therefore explicitly excluded from answer-prediction inputs, rather than treated as neutral context.
 
+## Split comparability
+
+[Notebook 12](../notebooks/12_milestone_audit_statistics_privacy.ipynb) tests input-side distributions for all splits and label-side distributions for train vs dev only (test labels are not analysed). Every KS statistic is at most 0.077 and every Cramér's V at most 0.035; no train–dev label difference is significant at 0.05. The splits are comparable, and the small input shifts fit the paper's report-level split.
+
 ## Limitations and unresolved questions
 
-Field semantics, annotation completeness, source-document provenance, official benchmark normalization, and permitted-use conditions still need deeper verification. Financial language, units, reporting-period ambiguity, and table extraction format can limit generalization beyond this benchmark.
+- **Resolved since M2 began:** source provenance, license terms, and the official evaluation convention (execution accuracy against `exe_ans`, verified against the pinned `evaluate.py`; see [evaluation-plan.md](evaluation-plan.md)).
+- **Still open:** the exact provenance of the derived fields `table_retrieved`, `text_retrieved`, `model_input` and `tfidftopn`. They stay excluded from inputs.
+- **Generalization:** financial language, units, reporting-period ambiguity and table extraction format may limit transfer beyond this benchmark's report pages.

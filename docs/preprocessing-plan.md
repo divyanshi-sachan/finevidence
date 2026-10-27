@@ -35,4 +35,10 @@ The raw record remains the source of truth. Derived fields must retain the recor
 
 ## Acceptance criteria for M2 completion
 
-Notebook 04 shows actual examples, validation counts, and tests for reusable logic. M2 is ready for M3 only when a task-specific canonical-answer policy is documented, split provenance is retained, known anomalies are recorded, and the preprocessing outcome is suitable for a simple baseline.
+| Criterion | Status and evidence |
+| --- | --- |
+| Actual examples, validation counts and tests for reusable logic | Met: Notebook 04, plus `tests/test_package.py` |
+| Task-specific canonical-answer policy documented | Met: display-answer policy in Notebook 05; official execution accuracy adopted in Notebook 09 ([evaluation-plan.md](evaluation-plan.md)) |
+| Split provenance retained | Met: pinned commit and SHA-256 checksums, verified at every load by `finevidence.data.acquisition` |
+| Known anomalies recorded | Met: `text_-1` reference, empty display answers, derived-field provenance ([m2-data-findings.md](m2-data-findings.md)) |
+| Preprocessing suitable for a simple baseline | Met: Notebooks 06–08 ran on it; Notebooks 10–11 use the same allowlisted inputs |

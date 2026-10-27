@@ -74,3 +74,74 @@
 - **Observed result:** gold-vs-gold equivalent for 6,251/6,251 programs (about 14 s on CPU). On 9,392 swapped variants, the two implementations agreed 9,392/9,392 times. Equivalent: add 1,512, multiply 567, divide 19, subtract 23. Not equivalent: divide 4,426, subtract 2,716, greater 124, exp 5. The few equivalent divide/subtract swaps are cases where swapping leaves the expression unchanged, such as identical arguments.
 - **Limitations:** swapped arguments test only one kind of perturbation. Agreement on generated programs is untested until a generator exists. Matching tokens verbatim (`100` ≠ `const_100`) follows the official script, even where the values are equal.
 - **Decision:** use `compare_programs` as the program-accuracy metric for Notebooks 10–11.
+
+## 2026-10-22 — cross-encoder evidence retriever, dev (Notebook 10)
+
+- **Question:** Does a cross-encoder trained on train `gold_inds` retrieve all gold facts more often than train-fitted TF-IDF on the same segment rendering?
+- **Dataset and split protocol:** pinned public FinQA train (fitting) and dev (checkpoint selection and reporting), both verified by SHA-256 through `finevidence.data.acquisition`. The official test split was not loaded. Prediction inputs used only `id`, `question`, `table`, `pre_text` and `post_text`. Dev `gold_inds` were read only after scoring, for recall.
+- **Configuration:** `configs/retriever_bert_base.toml`: `bert-base-uncased`, 3 random negatives per positive resampled every epoch, 5 epochs, batch size 16, learning rate 2e-5, warmup ratio 0.1, `max_seq_length` 512, header row included, seed 42. The checkpoint was selected by dev all-gold recall@5.
+- **Command (Kaggle):** `papermill notebooks/10_retriever_training.ipynb /kaggle/working/10_retriever_training_executed.ipynb --log-output --cwd notebooks -k python3`
+- **Code state and environment:** commit `7028afc`; Python 3.13.15, torch 2.11.0+cu128, transformers 5.16.1, Tesla T4 (Kaggle).
+- **Data sizes:** 6,251 train records → 10,691 positives, a 180,663-segment negative pool, and 42,764 pairs (2,673 steps) per epoch. The only unmatched train gold key is the flagged `text_-1`. Dev: 883 records, 26,834 segments (467 records have more than one gold fact).
+- **Training history (dev all-gold@5 / any-gold@5):** epoch 1 0.8539 / 0.9841; epoch 2 0.8686 / 0.9853; **epoch 3 0.8698 / 0.9887 (selected)**; epoch 4 0.8630 / 0.9819; epoch 5 0.8437 / 0.9751. Mean training loss fell from 0.2733 to 0.0667. About 300 s of training plus 40 s of dev ranking per epoch; 28 min 25 s in total.
+- **Observed dev recall (selected checkpoint vs TF-IDF):**
+
+  | k | TF-IDF any | TF-IDF all | TF-IDF all, multi-fact | Cross-encoder any | Cross-encoder all | Cross-encoder all, multi-fact |
+  | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+  | 1 | 0.5878 | 0.2922 | 0.0000 | 0.8947 | 0.4134 | 0.0000 |
+  | 3 | 0.8256 | 0.5345 | 0.2719 | 0.9728 | 0.8075 | 0.6724 |
+  | 5 | 0.9015 | 0.6602 | 0.4497 | 0.9887 | 0.8698 | 0.7709 |
+  | 10 | 0.9604 | 0.8414 | 0.7452 | 0.9943 | 0.9354 | 0.8865 |
+
+  At k = 5, records still missing at least one gold fact fall from about 300 to about 115 of 883. All-gold@1 for multi-fact records is 0 by construction.
+- **Artifacts:** the executed notebook is committed as `notebooks/10_retriever_training.ipynb`; its cell sources are identical to `7028afc`. Ignored local copies: `data/processed/retriever_bert_base_dev_rankings.jsonl` (883 rows, all stamped `7028afc`) and `models/retriever-bert-base-dev-v1/history.json`. The checkpoint `best/` remains on Kaggle only. Re-scoring the local rankings against dev `gold_inds` reproduced every recall value in the table to four decimals.
+- **Limitations:** the checkpoint was selected on dev and is also reported on dev, so these dev numbers are slightly optimistic. Epochs 2–4 are within 0.007 of each other, so the selection effect is small but nonzero. Unbiased retrieval numbers need the final held-out evaluation in M4. Dev all-gold recall fell after epoch 3 while training loss kept falling, which suggests overfitting with longer training. This is one seed and one GPU type. Recall measures evidence availability only, not answer correctness.
+- **Decision:** accept this retriever as the M3 stage 1. Feed the generator the top 5 segments (`top_n_for_generator = 5`). About 13% of dev records still lack a gold fact in the top 5, which caps end-to-end execution accuracy; the gold-facts oracle in Notebook 11 will separate that cap from generator errors.
+
+## 2026-10-22 — program generator, first Kaggle attempt (failed: out of memory)
+
+- **Run:** Notebook 11 at commit `24db253` on a Kaggle Tesla T4 (torch 2.11.0+cu128, transformers 5.16.1): `t5-base`, fp32, batch 16, 10 epochs planned.
+- **Observed before the failure:** training inputs reach 794 tokens (36 of 6,251 truncated to 512); dev retrieved inputs reach 704 tokens (14 of 883 truncated); targets are at most 50 tokens. 391 steps per epoch.
+- **Failure:** `torch.OutOfMemoryError` during the first epoch's forward pass, with 13.77 GiB of 14.56 GiB allocated. The traceback shows the decoder key/value cache being filled during training.
+- **Fix (commit after `24db253`):** each 16-example optimizer step is processed as two 8-example chunks, weighted by their target-token share, with `use_cache=False` during training. Beam-search decoding uses `eval_batch_size = 16`. `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` is set, and peak GPU memory is printed each epoch. On CPU with `t5-small`, the token-weighted 2×8 gradient matched the 16-example full-batch gradient (max absolute difference 1.4e-6, largest gradient 5.2), so the optimization target is unchanged.
+- **Result:** none; no epoch completed. This entry records the attempt only.
+
+## 2026-10-22 — T5 program generator over retrieved facts, dev (Notebook 11)
+
+- **Question:** Given the Notebook 10 retriever's top 5 dev facts, how often does a fine-tuned `t5-base` generate a program whose execution equals `exe_ans`, and how much error comes from retrieval rather than generation?
+- **Dataset and split protocol:** pinned public FinQA train (fitting) and dev (checkpoint selection and reporting), verified by SHA-256. The official test split was not loaded. Dev retrieved inputs come from the SHA-256-verified Notebook 10 ranking file and read no annotation field. The gold-facts oracle reads `gold_inds` keys by design and is a diagnostic only.
+- **Configuration:** `configs/generator_t5_base.toml`: `t5-base`, fp32, effective batch 16 (2 × 8 token-weighted gradient accumulation), learning rate 3e-4, warmup ratio 0.05, 10 epochs, 5 facts per input (gold plus same-record distractors, resampled each epoch), beam size 4, seed 42. The checkpoint was selected by dev execution accuracy with retrieved inputs.
+- **Command (Kaggle):** `papermill notebooks/11_program_generator.ipynb /kaggle/working/11_program_generator_executed.ipynb --log-output --cwd notebooks -k python3`
+- **Code state and environment:** commit `5f10139`; Python 3.13.15, torch 2.11.0+cu128, transformers 5.16.1, Tesla T4 (Kaggle). Peak GPU memory 9.55 GB. About 580 s of training and 3 min of dev decoding per epoch; 7,651 s (2.1 h) for 10 epochs.
+- **Input lengths:** 36/6,251 train and 14/883 dev retrieved sources exceed 512 tokens and are truncated; targets are at most 50 tokens (limit 64).
+- **Training history (dev retrieved execution correct of 883):** 299, 373, 437, 455, 488, 494, 508, 501, **523 (epoch 9, selected)**, 515. Training loss fell from 1.342 to 0.132.
+- **Observed dev results (selected checkpoint):**
+
+  | Condition | Execution correct | Execution accuracy | Program accuracy | Invalid rate | Operand grounding |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | Retrieved top 5 | 523 | 0.5923 | 0.5561 | 0.0079 | 0.9704 |
+  | Gold-facts oracle | 578 | 0.6546 | 0.6183 | 0.0079 | 0.9755 |
+  | Reference: Notebook 08 arithmetic | 35 | 0.0396 | — | — | — |
+
+  The normal-approximation 95% interval for the retrieved condition is about 0.560–0.625. Per record: 494 are correct in both conditions, 29 only with retrieved inputs, and 84 only with gold facts. 32 retrieved-condition answers are execution-correct but not symbolically equivalent to the gold program.
+- **Post-hoc breakdown (execution accuracy, retrieved / oracle):** 1-step programs (523) 0.6558 / 0.7208; 2-step (287) 0.5540 / 0.6341; 3+-step (73) 0.2877 / 0.2603. Single gold fact (416) 0.6274 / 0.6947; 2+ gold facts (467) 0.5610 / 0.6188. All gold facts in the top 5 (768) 0.6393 / 0.6979; not all (115) 0.2783 / 0.3652.
+- **Verification:** the executed notebook's cell sources are identical to `5f10139` and contain no error outputs. Re-scoring both downloaded prediction files locally, with `execute_program`, `compare_execution`, `compare_programs` and `operand_grounding` on rebuilt inputs, reproduced every metric and breakdown above. The downloaded checkpoint regenerated the first 16 retrieved dev predictions exactly on CPU.
+- **Artifacts (ignored by Git):** `models/generator-t5-base-dev-v1/best/` (`model.safetensors` SHA-256 `c9c5c8cc9ac46a72627d47bd974307240fbcb30cb3ef80bb0f48cde9496ca945`), `models/generator-t5-base-dev-v1/history.json`, and `data/processed/generator-t5-base-dev-v1_dev_{retrieved,gold_facts_oracle}_predictions.jsonl`. The executed notebook is committed.
+- **Limitations:** the checkpoint was selected on dev and is also reported on dev; epochs 7–10 span about 2.5 points, so the result is somewhat optimistic. This is one seed, one GPU type, and untuned FinEvidence hyperparameters. Oracle inputs average about 2 facts while training used 5, so the oracle differs in input distribution, not only in evidence quality. The breakdowns are correlations, not causal error categories. The Notebook 10 retriever checkpoint was not kept, so test-time retrieval in M4 requires re-running Notebook 10 at `7028afc`.
+- **Decision:** accept the retriever + generator pipeline as the M3 candidate. The M3 exit condition (baseline and candidate run under comparable conditions with observed results) is met on dev. M4 should start with categorized error analysis of the 360 retrieved-condition errors.
+
+## 2026-10-22 — M1–M3 audit: split statistics, privacy scan, result uncertainty (Notebook 12)
+
+- **Question:** Do the splits differ statistically, does the report text contain personal data, and how certain are the M3 dev comparisons?
+- **Data:** pinned public train, dev and test files (SHA-256 verified). Input-side statistics and the privacy scan cover all splits. Label-side statistics are train vs dev only; no new test-label statistic was computed. M3 uncertainty uses the saved dev prediction artifacts of Notebooks 08 and 11.
+- **Command:** `.venv/bin/jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=900 notebooks/12_milestone_audit_statistics_privacy.ipynb`; seed 42 for all resampling.
+- **Observed results:**
+  - KS D ≤ 0.077 for all input features. The largest detectable shifts are train vs dev in sentences per report (D = 0.075, p = 0.0003) and train vs test in table rows (D = 0.077, p < 0.0001).
+  - Train vs dev label distributions: smallest chi-square p = 0.074; Cramér's V ≤ 0.035. 77.0% of train questions mention a year.
+  - Privacy: 0 SSN-like strings; 1 email (test, corporate); 35 phone-pattern matches (21 space-separated table figures, 14 formatted, corporate in the examples inspected); 158 URLs; 2 report pages naming individuals.
+  - Bootstrap 95% CIs for dev execution accuracy: conservative arithmetic 0.0396 [0.0272, 0.0532]; generator, retrieved 0.5923 [0.5606, 0.6251]; oracle 0.6546 [0.6229, 0.6852].
+  - McNemar tests: generator vs arithmetic 493 vs 5 discordant records (p ≈ 6e-139); oracle vs retrieved 84 vs 29 (p ≈ 2e-7).
+- **Re-executions in the same audit:** Notebook 07 re-ran cleanly; it reproduced 3/871 with a byte-identical prediction file, which resolves an earlier stale cell. Notebooks 01 and 02 were re-executed after replacing an absolute local path in their outputs with a repository-relative one. Notebook 02's parser-coverage cell now shows 6,251/883/1,147, because it uses the parser extended in Notebook 04; the original narrower-grammar counts stay recorded in `m2-data-findings.md`. No other Notebook 02 output changed.
+- **External verification:** FinQA repository `LICENSE` (MIT) at the pinned commit; FinQA paper provenance, splits, human performance and published dev/test results ([research-notes.md](research-notes.md)).
+- **Limitations:** the intervals do not cover checkpoint selection, seed or hardware variance; the privacy scan is pattern-based.
+- **Decision:** M2's statistical-analysis and privacy deliverables are complete; the M1 success criteria now carry numeric targets fixed before any test use.

@@ -1,6 +1,6 @@
-# FinQANet-style retriever + program-generator baseline: M3 plan
+# FinQANet-style retriever + program-generator baseline: M3 plan and record
 
-**Status:** planned, not executed. No result in this document is observed unless it cites a notebook.
+**Status:** all six steps executed (2026-10-22). Results are dev-only: retriever all-gold recall@5 0.8698 (Notebook 10); end-to-end execution accuracy 0.5923 (Notebook 11). This document keeps the original design rationale. Observed numbers cite their notebook, and full run records are in [experiment-log.md](experiment-log.md).
 
 ## Why this baseline
 
@@ -55,9 +55,9 @@ This mirrors the two-stage design of the official FinQA code at the pinned commi
 | 1 ✅ | `src/finevidence/retrieval/segments.py`: `build_evidence_segments` (optional `table_0` header row) and `segment_numeric_candidates`, with tests. | **Done 2026-10-22.** Matches Notebook 08's former inline functions on all 7,134 train+dev records; the Notebook 08 re-run reproduces 32/871 display and 35/883 execution with byte-identical predictions. Notebooks 06, 07 and 09 keep their own table renderings, which differ, and are unchanged. |
 | 2 ✅ | `src/finevidence/evaluation/program.py`: symbolic program equivalence. | **Done 2026-10-22.** Gold-vs-gold holds for 6,251/6,251 train programs; agrees with the official `equal_program` on 9,392/9,392 argument-swapped train variants. |
 | 3 ✅ | Model dependencies as a separate `model` extra (`torch`, `transformers`); [gpu-setup.md](gpu-setup.md); `python -m finevidence.data.acquisition`; `configs/retriever_bert_base.toml` with the validated `load_retriever_config`. | **Done 2026-10-22 (CPU side).** The config loads and validates in tests; the acquisition helper verified local train/dev checksums. Not yet run on a GPU runtime. |
-| 4 ◐ | `finevidence.retrieval.pairs` (tested) and `notebooks/10_retriever_training.ipynb` with `configs/retriever_bert_base.toml`. | **Implemented 2026-10-22; full GPU run pending.** Train: 10,691 positives, 180,663-segment negative pool, 42,764 pairs per epoch; only `text_-1` unmatched. A CPU smoke run (`FINEVIDENCE_SMOKE_TEST=1`, tiny random model, 40/20 records) executed every cell; its scores are not results. Exit evidence still needed: dev any/all-gold recall@k versus TF-IDF from a full run. |
-| 5 | `notebooks/11_program_generator.ipynb` and `configs/generator_t5_base.toml`. | Dev execution accuracy, program accuracy, invalid and grounding rates, and the gold-facts oracle. |
-| 6 | Experiment-log entries for steps 4–5. | Commit hash, data checksums, seed, GPU type, wall-clock time, metrics, limitations. |
+| 4 ✅ | `finevidence.retrieval.pairs` (tested) and `notebooks/10_retriever_training.ipynb` with `configs/retriever_bert_base.toml`. | **Done 2026-10-22 (Kaggle T4, commit `7028afc`).** Dev all-gold recall@5 0.8698 vs TF-IDF 0.6602; all-gold@3 0.8075 vs 0.5345; multi-fact all-gold@5 0.7709 vs 0.4497. Epoch 3 of 5 selected on dev. See the experiment log for limitations. |
+| 5 ✅ | `finevidence.generation` (inputs, config, scoring; tested) and `notebooks/11_program_generator.ipynb` with `configs/generator_t5_base.toml`. | **Done 2026-10-22 (Kaggle T4, commit `5f10139`; the first attempt at `24db253` ran out of memory and is logged).** Dev execution accuracy 0.5923 (523/883), program accuracy 0.5561, invalid rate 0.0079, operand grounding 0.9704; gold-facts oracle 0.6546. Re-scored and checkpoint-verified locally. |
+| 6 ✅ | Experiment-log entries for steps 4–5. | **Done 2026-10-22.** Both runs are logged with commit, data checksums, seed, GPU, wall-clock time, metrics, artifacts and limitations, plus the failed out-of-memory attempt. |
 
 M3 exits after step 5: the baseline and at least one candidate have been run under comparable conditions. Iteration 2 (the pointer decoder), retriever variants and error analysis then move to M4.
 

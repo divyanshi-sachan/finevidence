@@ -1,5 +1,17 @@
 # M2 data findings — executed FinQA audit
 
+**Scope.** This is the measured record behind every M2 deliverable. Evidence comes from five executed notebooks:
+
+| Notebook | M2 deliverable it supports |
+| --- | --- |
+| [02](../notebooks/02_finQA_eda.ipynb) | Acquisition, schema, EDA, data quality, split integrity |
+| [03](../notebooks/03_finqa_preprocessing_analysis.ipynb) | Value formats, program grammar, evidence alignment, leakage-safe serialization |
+| [04](../notebooks/04_data_preprocessing.ipynb) | Tested, reusable preprocessing components |
+| [05](../notebooks/05_preprocessing_validation_and_answer_policy.ipynb) | Train-only validation and the canonical-answer policy |
+| [12](../notebooks/12_milestone_audit_statistics_privacy.ipynb) | Statistical split comparison and privacy scan |
+
+The data card ([dataset-card.md](dataset-card.md)) holds provenance, license and privacy decisions; [preprocessing-plan.md](preprocessing-plan.md) holds the field contract.
+
 **Execution evidence:** [notebooks/02_finQA_eda.ipynb](../notebooks/02_finQA_eda.ipynb) was executed on 2026-10-20 against the commit-pinned public splits recorded in [dataset-card.md](dataset-card.md). Findings below are measured from that run.
 
 ## Dataset structure and size
@@ -76,9 +88,9 @@ Representative unsupported forms are table operations with textual labels, such 
 
 For answer-prediction experiments, the permissible model input is the question plus financial context (`table`, `pre_text`, and `post_text`, or a documented derived representation). Do **not** include `program`, `program_re`, `exe_ans`, `answer`, `gold_inds`, `steps`, `ann_table_rows`, `ann_text_rows`, or other answer/evidence annotations as input features. They are supervision, analysis, or evaluation data depending on the experiment. This rule applies to baselines, retrieval, and numerical-reasoning experiments unless a future experiment explicitly changes the prediction task and documents that change.
 
-## Decision for the next milestone task
+## Decision recorded after the EDA (2026-10-20)
 
-Proceed to `03_data_preprocessing.ipynb` with split-preserving, reversible preprocessing. Do not train a model yet. The detailed plan is in [preprocessing-plan.md](preprocessing-plan.md). Its entry requirements include the new evidence-key validator and conservative non-executing program parser, both covered by tests.
+Proceed to split-preserving, reversible preprocessing (done in Notebooks 03–04) before any model training. The detailed plan is in [preprocessing-plan.md](preprocessing-plan.md); its entry requirements, the evidence-key validator and the non-executing program parser, are covered by tests.
 
 ## Preprocessing-focused investigation
 
@@ -114,3 +126,24 @@ The historical repository update documents a table-to-text label-leakage bug; us
 | Annotation diagnostics | `audit_record_annotations` range-checks evidence, reports parser status, and records empty display fields without deleting examples. | The official `text_-1` annotation remains the only invalid reference: train 1, dev 0, test 0. Empty answer/explanation counts remain diagnostics, not exclusion rules. |
 
 The test suite contains 17 passing tests after this implementation. The final parser extension was motivated by two observed train programs, `HOLX/2005/page_27.pdf-1` and `HOLX/2005/page_27.pdf-2`, which use `table_sum(17695228, 963202)`; this is documented as observed syntax, not an arithmetic interpretation.
+
+## Canonical-answer policy (Notebook 05)
+
+Notebook 05 fixed the display-answer comparison rules on train before any dev evaluation: empty display answers are reported separately, numeric answers must match their percent marker within a 1e-4 tolerance, and text is compared after normalization. Notebook 09 later showed that this comparator rejects most correct values, because display answers are rounded and percentages are scaled by 100. The official execution accuracy therefore became the primary metric; the display comparator remains secondary. Both are specified in [evaluation-plan.md](evaluation-plan.md).
+
+## Statistical split comparison and privacy scan (Notebook 12)
+
+- **Input side, all splits.** KS statistics are at most 0.077 for question length, table size, text length, numeric-cell share and year mentions, and the medians are identical or within one unit. The small detectable shifts (train vs dev in sentences per report, D = 0.075; train vs test in table rows, D = 0.077) are consistent with report-level splits.
+- **Label side, train vs dev only.** Answer type, program length, operation family and gold-fact count show no significant difference (smallest p = 0.074; Cramér's V ≤ 0.035). No new test-label statistic was computed.
+- **Privacy.** No SSN-like strings. One corporate email address, a few corporate phone numbers, and two report pages naming executives in public disclosures. Handling decisions are in the data card.
+
+## M2 completion
+
+All M2 deliverables now have executed evidence. They are:
+- a verified data card with source, schema, splits, license, provenance and privacy;
+- EDA with real examples, distributions, missingness and quality issues;
+- reproducible, tested preprocessing with before/after examples;
+- a statistical split comparison;
+- a privacy assessment with handling and retention decisions.
+
+The M2 exit condition (clean, documented splits; leakage checks and privacy recorded; no test labels used for tuning) is met. [milestone-status.md](milestone-status.md) maps each deliverable to its evidence.

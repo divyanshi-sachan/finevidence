@@ -1,12 +1,26 @@
 # FinEvidence
 
-FinEvidence is a research and engineering project for evidence-grounded financial question answering with numerical reasoning. It will investigate how questions over financial reports can be answered from cited table and narrative evidence, while preserving the calculations, periods, and units behind each answer.
+FinEvidence answers numerical questions about financial reports and shows its work. For each question it retrieves the supporting table rows and sentences, generates an executable calculation program, and runs that program safely. The answer comes back with its evidence and its calculation, so an analyst can check it.
 
-The initial dataset target is [FinQA](https://finqasite.github.io/). This repository does not include the dataset, model weights, or benchmark results.
+It is built and evaluated on [FinQA](https://github.com/czyssrs/FinQA): 8,281 questions written by finance experts over S&P 500 earnings reports. This repository contains code, configuration, notebooks and aggregate results only. Data and model weights are downloaded or trained locally and never committed.
 
-## Requirements and setup
+## Status
 
-Use Python 3.11 through 3.13. Create an isolated environment, then install the local package with development and research tools:
+M1–M3 are complete and awaiting review; M4 (evaluation and optimization) is next. See [docs/milestone-status.md](docs/milestone-status.md) for every deliverable and its evidence.
+
+**Dev results** (883 questions, official FinQA execution accuracy, bootstrap 95% CI):
+
+| System | Execution accuracy | Program accuracy |
+| --- | --- | --- |
+| Conservative arithmetic baseline | 3.96% [2.72, 5.32] | — |
+| **Cross-encoder retriever + T5 program generator** | **59.23% [56.06, 62.51]** | **55.61%** |
+| Same generator given only the gold facts (diagnostic) | 65.46% | 61.83% |
+
+The retriever finds every gold fact in its top 5 for 87.0% of dev questions (TF-IDF: 66.0%). These are dev numbers from dev-selected checkpoints; the single held-out test evaluation is reserved for M4.
+
+## Setup
+
+Use Python 3.11–3.13.
 
 ```bash
 python3.11 -m venv .venv
@@ -15,9 +29,15 @@ python -m pip install --upgrade pip
 python -m pip install -e '.[dev,research]'
 ```
 
-On Windows PowerShell, activate with `.venv\\Scripts\\Activate.ps1`.
+On Windows PowerShell, activate with `.venv\Scripts\Activate.ps1`. The `model` extra (`torch`, `transformers`, `papermill`) is needed only to train models on a GPU (see below).
 
-## Development commands
+Download the pinned FinQA train and dev splits and verify their SHA-256 checksums. Existing files are verified, never overwritten; the test split is fetched only with `--include-test`.
+
+```bash
+python -m finevidence.data.acquisition
+```
+
+## Checks
 
 ```bash
 ruff check .
@@ -25,44 +45,47 @@ ruff format --check .
 pytest
 ```
 
-Run `ruff format .` only when you intend to apply formatting changes.
+## Reproducing the results
 
-## GPU training runtime
+| Stage | How |
+| --- | --- |
+| Data audit and preprocessing (M2) | Run Notebooks 02–05 and 12 locally: `jupyter nbconvert --to notebook --execute --inplace notebooks/<name>.ipynb` |
+| Baselines (M3) | Run Notebooks 06–09 locally (CPU, a few minutes each) |
+| Retriever and generator (M3) | Run Notebooks 10–11 on a CUDA GPU, following [docs/gpu-setup.md](docs/gpu-setup.md) (Kaggle T4: about 0.5 h and 2.1 h) |
 
-Model training (Notebooks 10–11) uses the separate `model` extra (`torch`, `transformers`) on a CUDA GPU. See [docs/gpu-setup.md](docs/gpu-setup.md) for Colab/Kaggle setup, data acquisition with `python -m finevidence.data.acquisition`, checkpoint persistence, and environment recording.
+Every executed run is recorded in [docs/experiment-log.md](docs/experiment-log.md), with its command, commit, config, seed and observed metrics.
 
-## Research notebooks
+## Documentation
 
-Install the `research` extra above, then launch JupyterLab from the repository root:
-
-```bash
-jupyter lab
-```
-
-Download or verify the official public FinQA splits from the **Download or verify the official public splits** cell in Notebook 02. It uses a commit-pinned official URL, validates JSON before finalizing a new file, and never overwrites existing raw files:
-
-```bash
-jupyter lab notebooks/02_finQA_eda.ipynb
-```
-
-Run the executed EDA notebook afresh after a verified download:
-
-```bash
-jupyter nbconvert --to notebook --execute --inplace notebooks/02_finQA_eda.ipynb
-```
-
-The initial M1 scaffold is [notebooks/01_problem_and_dataset.ipynb](notebooks/01_problem_and_dataset.ipynb). The executed M2 audit is [notebooks/02_finQA_eda.ipynb](notebooks/02_finQA_eda.ipynb), followed by the [preprocessing analysis](notebooks/03_finqa_preprocessing_analysis.ipynb), [tested preprocessing implementation](notebooks/04_data_preprocessing.ipynb), dev-only lexical and arithmetic runs (Notebooks 06–08), and the [baseline-selection inspection](notebooks/09_baseline_selection_inspection.ipynb) that adopts official execution accuracy. The planned M3 baseline is in [docs/finqanet-baseline-plan.md](docs/finqanet-baseline-plan.md). The notebook sequence, expected milestones, and reproducibility standards are documented in [notebooks/README.md](notebooks/README.md). Notebooks that depend on later milestones are intentionally not pre-filled.
+| Document | Contents |
+| --- | --- |
+| [problem-statement.md](docs/problem-statement.md) | M1: problem, users, business objective, success targets, feasibility |
+| [dataset-card.md](docs/dataset-card.md) | Data source, schema, license, privacy, leakage rules |
+| [m2-data-findings.md](docs/m2-data-findings.md) | Measured M2 audit findings |
+| [preprocessing-plan.md](docs/preprocessing-plan.md) | Field contract and preprocessing decisions |
+| [evaluation-plan.md](docs/evaluation-plan.md) | Split protocol, metric definitions, experiment protocols |
+| [architecture.md](docs/architecture.md) | Pipeline and module responsibilities |
+| [finqanet-baseline-plan.md](docs/finqanet-baseline-plan.md) | Design and step record for the retriever + generator |
+| [experiment-log.md](docs/experiment-log.md) | Every executed experiment |
+| [milestone-status.md](docs/milestone-status.md) | Deliverable-by-deliverable milestone evidence |
+| [roadmap.md](docs/roadmap.md) | Current stage, M3 handoff, next task |
+| [research-notes.md](docs/research-notes.md) | Verified external sources (paper, official code, license) |
+| [notebooks/README.md](notebooks/README.md) | Notebook sequence and standards |
+| [screenshot/README.md](screenshot/README.md) | Presentation pack: M1/M2 slide content with embedded images |
+| [docs/presentation-m1-m2.md](docs/presentation-m1-m2.md) | Same slide content as plain text |
 
 ## Layout
 
 ```text
-src/finevidence/       Reusable package code
-tests/                 Automated tests for stable package behavior
-configs/               Versioned, non-secret experiment configuration
-data/                  Local data layout and acquisition guidance (data ignored)
-docs/                  Problem, architecture, data, evaluation, and roadmap records
-notebooks/             Research-first, ordered Jupyter notebooks
-.agents/skills/        Repository-local Codex workflow skills
+src/finevidence/   data, retrieval, generation, reasoning, evaluation packages
+tests/             unit tests for reusable behavior
+configs/           versioned experiment configurations
+notebooks/         numbered, executed research record
+docs/              project, data, evaluation and milestone records
+data/, models/     local data and checkpoints (Git-ignored)
+.agents/skills/    repository-local Codex workflow skills
 ```
 
-Read [AGENTS.md](AGENTS.md) before contributing. The required Industry Track deliverables and milestone exit conditions are in [docs/milestone-framework.md](docs/milestone-framework.md); use [docs/roadmap.md](docs/roadmap.md) to track current work and [docs/experiment-log.md](docs/experiment-log.md) for executed experiments.
+Read [AGENTS.md](AGENTS.md) before contributing. The milestone contract is [docs/milestone-framework.md](docs/milestone-framework.md).
+
+FinEvidence is a research prototype. It does not provide financial or investment advice.
