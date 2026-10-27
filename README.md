@@ -71,6 +71,8 @@ Every executed run is recorded in [docs/experiment-log.md](docs/experiment-log.m
 | [roadmap.md](docs/roadmap.md) | Current stage, M3 handoff, next task |
 | [research-notes.md](docs/research-notes.md) | Verified external sources (paper, official code, license) |
 | [notebooks/README.md](notebooks/README.md) | Notebook sequence and standards |
+| [screenshot/README.md](screenshot/README.md) | Presentation pack: M1/M2 slide content with embedded images |
+| [docs/presentation-m1-m2.md](docs/presentation-m1-m2.md) | Same slide content as plain text |
 
 ## Layout
 
