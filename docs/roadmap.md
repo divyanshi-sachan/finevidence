@@ -13,7 +13,7 @@ FinEvidence follows the six-stage Industry Track. The detailed objectives, deliv
 
 ## Current stage
 
-**M1–M3 deliverables are complete and ready for review; formal acceptance is pending.** The 2026-10-22 audit closed the remaining M2 items: license terms verified, a privacy assessment and statistical split comparison added in Notebook 12, and M1 success criteria given numeric targets. M4 has not started.
+**M1–M3 deliverables are complete and ready for review; formal acceptance is pending.** The 2026-10-22 audit closed the remaining M2 items: license terms verified, a privacy assessment and statistical split comparison added in Notebook 12, and M1 success criteria given numeric targets. M4 is in progress: the categorized error analysis is done.
 
 ## M3 handoff (2026-10-22)
 
@@ -25,4 +25,4 @@ FinEvidence follows the six-stage Industry Track. The detailed objectives, deliv
 
 ## Immediate next task
 
-Start M4 with a categorized error analysis of the Notebook 11 retrieved-condition dev errors, using the saved predictions in `data/processed/`. Keep the official test split reserved for the final M4 run.
+M4 has started. The categorized dev error analysis is executed ([Notebook 13](../notebooks/13_error_analysis.ipynb)): 272 of 360 errors occur with all gold facts retrieved, and the gold-facts oracle mostly helps by removing distractors. A manual review of 40 sampled errors found 14 (35%, CI 22–50%) that are ambiguous questions, debatable gold labels or convention mismatches. Next: the first improvement iteration (distractor-robust generation). The official test split stays reserved for the final M4 run.

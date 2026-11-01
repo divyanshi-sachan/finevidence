@@ -145,3 +145,27 @@
 - **External verification:** FinQA repository `LICENSE` (MIT) at the pinned commit; FinQA paper provenance, splits, human performance and published dev/test results ([research-notes.md](research-notes.md)).
 - **Limitations:** the intervals do not cover checkpoint selection, seed or hardware variance; the privacy scan is pattern-based.
 - **Decision:** M2's statistical-analysis and privacy deliverables are complete; the M1 success criteria now carry numeric targets fixed before any test use.
+
+## 2026-11-01 — Categorized dev error analysis of the M3 pipeline (Notebook 13)
+
+- **Question:** Where do the 360 retrieved-condition dev errors of the Notebook 11 generator come from, and which error type should the first M4 improvement target?
+- **Data and protocol:** pinned dev split (SHA-256 verified) and the saved Notebook 11 prediction files (retrieved and gold-facts oracle). The test split was not loaded. Dev labels are read for diagnosis only.
+- **Method:** `finevidence.evaluation.categorize_error` assigns one primary category per error in a fixed priority order: invalid program, retrieval miss, scale, sign, near miss (within 1%), operation sequence, operands, other. Covered by `tests/test_error_categories.py`.
+- **Command:** `.venv/bin/jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=900 notebooks/13_error_analysis.ipynb` (code state: branch `m4/error-analysis` from `5c991cf`, uncommitted at run time).
+- **Observed results (360 errors):** operation error 123 (34.2%), operand error 108 (30.0%), retrieval miss 81 (22.5%), scale 14, sign 14, near miss 13, invalid 7, other 0.
+  - 272 errors (75.6%) occur with every gold fact among the 5 inputs.
+  - The gold-facts oracle fixes 17 of 81 retrieval misses, 42 operand errors and 16 operation errors; 65 of its 84 gains are on records with complete retrieval.
+  - Operation errors: 72 of 123 have 2+ step gold programs; 13 stop early (prefix of gold), 13 add extra steps, 97 use a different sequence.
+  - Operand errors: 16 use a value from the same table row as a gold value; 19 reuse the gold literals in another order or with another constant; 73 use other values.
+  - 9 of 14 sign errors are questions naming two or more years.
+- **Artifact (ignored by Git):** `data/processed/generator-t5-base-dev-v1_dev_error_categories.csv` (360 rows).
+- **Limitations:** categories are rule-based proxies with one label per error, not causes. Ambiguous questions and debatable gold labels are not detected by rules; a manual review of a fixed sample is still needed. Dev only, dev-selected checkpoint, one seed.
+- **Decision:** the first M4 improvement iteration should target distractor robustness of the generator (upper bound from oracle gains on fully retrieved records: 65 records), ahead of retrieval improvements (measured ceiling about 17 records on these errors). Before that, run the manual ambiguity review so the error taxonomy covers the M4-required ambiguity category.
+
+## 2026-11-01 — Manual ambiguity and label-quality review of a dev error sample (Notebook 13, section 5)
+
+- **Question:** How many dev errors are ambiguous questions, debatable gold labels or convention differences rather than model errors?
+- **Sample and protocol:** 40 of the 360 retrieved-condition errors, drawn with `errors.sample(n=40, random_state=42)`; dev only. Each error was labelled by one reviewer (Claude, the coding assistant, at the user's request) as `clear_model_error`, `ambiguous_question`, `debatable_gold` or `convention_mismatch`, with a note. Labels: [m4-ambiguity-review.csv](m4-ambiguity-review.csv). The notebook re-draws the sample and checks it matches the labelled ids.
+- **Observed results:** clear model error 26, debatable gold 7, ambiguous question 4, convention mismatch 3. Not a clear model error: 14/40 = 0.35 (Wilson 95% CI 0.22–0.50). In 2 debatable-gold cases the prediction follows the question and the gold does not. 5 of the 26 clear errors copy a number with a wrong digit or use a year as a value.
+- **Limitations:** a single reviewer and a small sample; labels are judgements, not measurements. The interval is too wide to scale to an exact count over all 360 errors.
+- **Decision:** keep the official metric and gold labels unchanged and report the share as an evaluation caveat. Improvement priority unchanged: distractor robustness, then constraining program literals to numbers in the input facts.

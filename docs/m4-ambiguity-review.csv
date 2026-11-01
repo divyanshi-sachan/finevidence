@@ -1,0 +1,41 @@
+id,label,note
+AAL/2013/page_15.pdf-4,clear_model_error,used the all-carrier total instead of American's total
+ABMD/2009/page_88.pdf-1,debatable_gold,gold program uses 5583334 while the text says 5583333 and the display answer is 5583331
+ABMD/2009/page_88.pdf-4,clear_model_error,divided shares by a cash amount
+AES/2001/page_44.pdf-4,clear_model_error,revenue should be margin divided by the margin percentage
+AES/2016/page_185.pdf-3,clear_model_error,unrelated operands
+AES/2017/page_157.pdf-2,debatable_gold,246 million is a dollar amount still available so multiplying it by the share price is not a cost
+AES/2017/page_175.pdf-1,clear_model_error,divided the total by itself
+AMT/2005/page_54.pdf-2,ambiguous_question,table text is garbled and the gold portion exceeds 100%
+APD/2019/page_48.pdf-2,clear_model_error,added the investing outflow with the wrong sign
+BDX/2018/page_82.pdf-2,debatable_gold,question asks service cost to interest cost; the gold divides interest by service; prediction matches the question
+BKR/2017/page_103.pdf-4,clear_model_error,divided instead of multiplying units by fair value
+BLK/2013/page_124.pdf-4,clear_model_error,unrelated operands
+BLK/2017/page_122.pdf-3,clear_model_error,used a number not in the evidence
+C/2010/page_223.pdf-2,ambiguous_question,percentage of the net or the gross loan portfolio are both reasonable readings
+DRE/2002/page_40.pdf-1,clear_model_error,subtracted a value from itself; gold also scales by 100 unlike most percent answers
+DRE/2007/page_59.pdf-2,convention_mismatch,prediction is the ratio 0.017 and gold is the same value times 100
+DVN/2014/page_85.pdf-1,clear_model_error,wrong averaging steps
+ETR/2008/page_249.pdf-1,clear_model_error,copied 14669 as 14699
+ETR/2011/page_376.pdf-1,debatable_gold,gold adds a stray constant 2 before averaging; display answer 559 disagrees with the executed 560
+ETR/2017/page_26.pdf-1,debatable_gold,percent change from 2015 to 2016 should use the 2015 base; the prediction does and the gold does not
+HII/2017/page_104.pdf-4,debatable_gold,gold divides by the constant 3 which is not in the evidence for the asked ratio
+HUM/2017/page_133.pdf-2,clear_model_error,copied 0.40 as 0.49
+HWM/2017/page_41.pdf-1,clear_model_error,returned the remaining share instead of the reduction
+ILMN/2007/page_78.pdf-3,clear_model_error,copied 187103 as 18703
+IP/2012/page_93.pdf-2,clear_model_error,used the year 2010 as a value
+IPG/2008/page_21.pdf-3,clear_model_error,averaged three values with one repeated
+JKHY/2014/page_30.pdf-2,convention_mismatch,index starts at 100 so 16.85 points equals the gold 16.85% written as a ratio
+LMT/2015/page_99.pdf-4,clear_model_error,unrelated constant
+MAS/2012/page_70.pdf-1,clear_model_error,reversed the change and its base
+MRO/2007/page_149.pdf-1,ambiguous_question,the question is a garbled table row with no clear request
+PM/2014/page_67.pdf-2,clear_model_error,added unrelated values and steps
+PNC/2009/page_46.pdf-4,convention_mismatch,prediction 0.165 and gold 16.5 both mean 16.5%
+PNC/2011/page_78.pdf-3,ambiguous_question,the direction of the change between the two dates is not fixed by the wording
+RCL/2014/page_17.pdf-1,clear_model_error,used global guests instead of European guests
+RE/2017/page_159.pdf-1,debatable_gold,gold program returns a share count while the question and display answer are a percentage
+SNPS/2006/page_69.pdf-2,clear_model_error,missed the millions to thousands conversion
+SNPS/2006/page_69.pdf-3,clear_model_error,subtracted a value from itself
+UAA/2016/page_52.pdf-2,clear_model_error,unrelated denominator
+UNP/2008/page_79.pdf-1,clear_model_error,used 415 which is not in the evidence and wrong steps
+ZBH/2017/page_71.pdf-2,clear_model_error,reversed a change whose direction the question fixes from 2016 to 2017
