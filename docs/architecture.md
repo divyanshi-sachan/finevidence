@@ -19,6 +19,8 @@ question + report (table, pre_text, post_text)
         ▼
 4. Generate ──────── Notebook 11                t5-base writes a FinQA program, e.g.
         │            (finevidence.generation)    subtract(5829, 5735), divide(#0, 5735)
+        │                                       Notebook 14: keep the 4 beam candidates and take the
+        │                                       first that executes and uses only numbers in the facts
         ▼
 5. Execute ───────── finevidence.reasoning      safe executor (no eval), official FinQA value rules
         │
@@ -36,7 +38,7 @@ answer + cited facts + program + executed value
 | --- | --- | --- |
 | `finevidence.data` | Load, validate and preprocess raw records; parse programs without executing them; check evidence keys; download pinned data | `load_finqa_split`, `build_structured_input`, `parse_finqa_program`, `validate_evidence_key`, `normalize_financial_value`, `acquisition.download_finqa_splits` |
 | `finevidence.retrieval` | Evidence segments, retriever training and ranking pairs, retriever config | `build_evidence_segments`, `build_training_pairs`, `build_ranking_pairs`, `sample_epoch_pairs`, `load_retriever_config` |
-| `finevidence.generation` | Generator inputs (training, retrieved, gold-facts oracle), config, per-record scoring | `build_training_examples`, `build_retrieved_examples`, `build_oracle_examples`, `score_program_prediction`, `load_generator_config` |
+| `finevidence.generation` | Generator inputs (training, retrieved, gold-facts oracle), config, per-record scoring | `build_training_examples`, `build_retrieved_examples`, `build_oracle_examples`, `score_program_prediction`, `load_generator_config`, `select_grounded_candidate` |
 | `finevidence.reasoning` | Safe program executor; the conservative arithmetic baseline | `execute_program`, `reason_over_candidates` |
 | `finevidence.evaluation` | Metrics | `compare_execution`, `compare_programs`, `gold_recall_at_k`, `operand_grounding`, `compare_display_answers` |
 

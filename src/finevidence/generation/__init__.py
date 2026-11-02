@@ -10,6 +10,7 @@ from .inputs import (
     load_rankings,
 )
 from .scoring import ProgramPredictionScore, score_program_prediction, summarize_scores
+from .selection import is_grounded_and_executable, select_grounded_candidate
 
 __all__ = [
     "GeneratorConfig",
@@ -19,9 +20,11 @@ __all__ = [
     "build_retrieved_examples",
     "build_training_examples",
     "format_generator_source",
+    "is_grounded_and_executable",
     "load_generator_config",
     "load_rankings",
     "score_program_prediction",
+    "select_grounded_candidate",
     "summarize_scores",
     "verify_rankings_file",
 ]

@@ -48,6 +48,7 @@ All predictions use only `id`, `question`, `table`, `pre_text` and `post_text` (
 
 - The single test evaluation of the selected pipeline. This requires re-running Notebook 10 at commit `7028afc`, because the retriever checkpoint was not kept.
 - Categorized error analysis: retrieval, operand selection, period/unit interpretation, multi-step composition, ambiguity and other observed categories. **Done** (Notebook 13): rule-based categories for all 360 errors (`categorize_error`) and a manual review of a fixed 40-error sample for ambiguity and gold-label quality ([m4-ambiguity-review.csv](m4-ambiguity-review.csv)).
+- Improvement iterations. **Iteration 1 done** (Notebook 14): grounded beam selection adopted (dev 0.6195 vs 0.5923, 24 fixed / 0 broken); fewer input facts rejected. Iteration 2: retraining with retrieved-style hard distractors (GPU).
 - Robustness checks for question rewording, reporting-period and unit perturbations.
 - Abstention: a confidence signal, calibrated on dev, reported as accuracy against coverage.
 - Inference record: per-question latency and cost under a documented setup.

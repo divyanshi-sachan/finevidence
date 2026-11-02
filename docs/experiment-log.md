@@ -169,3 +169,25 @@
 - **Observed results:** clear model error 26, debatable gold 7, ambiguous question 4, convention mismatch 3. Not a clear model error: 14/40 = 0.35 (Wilson 95% CI 0.22–0.50). In 2 debatable-gold cases the prediction follows the question and the gold does not. 5 of the 26 clear errors copy a number with a wrong digit or use a year as a value.
 - **Limitations:** a single reviewer and a small sample; labels are judgements, not measurements. The interval is too wide to scale to an exact count over all 360 errors.
 - **Decision:** keep the official metric and gold labels unchanged and report the share as an evaluation caveat. Improvement priority unchanged: distractor robustness, then constraining program literals to numbers in the input facts.
+
+## 2026-11-02 — Improvement iteration 1: fewer facts and grounded beam selection, dev (Notebook 14)
+
+- **Question:** Without retraining, does passing fewer retrieved facts (H1, distractors) or choosing the first grounded, executable beam candidate (H2, copy errors) improve dev execution accuracy?
+- **Data and protocol:** pinned dev split and SHA-256-verified Notebook 10 dev rankings; the saved Notebook 11 checkpoint. Test not loaded. The selector reads only input facts and the raw table.
+- **Settings:** top 3, 4 or 5 facts × top beam or grounded selection over the 4 beam candidates (`select_grounded_candidate`, covered by `tests/test_candidate_selection.py`). Beam size 4, other generation settings from `configs/generator_t5_base.toml`.
+- **Command:** `.venv/bin/jupyter nbconvert --to notebook --execute --inplace --ExecutePreprocessor.timeout=7200 notebooks/14_inference_iteration.ipynb`; Apple M5 (MPS), Python 3.13.16, torch 2.15.0, transformers 5.22.1, code at `469e59a` plus the uncommitted selector.
+- **Reproduction check:** top-5 candidate 0 equals the saved Notebook 11 prediction for 883/883 records.
+- **Observed results (execution correct of 883):**
+
+  | Setting | Correct | Execution acc. | Program acc. | Invalid | Grounding | Fixed / broken vs baseline |
+  | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+  | Top 5, top beam (M3 baseline) | 523 | 0.5923 | 0.5561 | 0.0079 | 0.9704 | — |
+  | **Top 5, grounded** | **547** | **0.6195** | **0.5855** | **0.0011** | **0.9923** | **24 / 0** (p ≈ 1.2e-7) |
+  | Top 4, top beam | 516 | 0.5844 | 0.5504 | 0.0079 | 0.9699 | 8 / 15 |
+  | Top 4, grounded | 542 | 0.6138 | 0.5821 | 0.0023 | 0.9922 | 29 / 10 |
+  | Top 3, top beam | 509 | 0.5764 | 0.5402 | 0.0091 | 0.9698 | 13 / 27 (p = 0.039) |
+  | Top 3, grounded | 537 | 0.6082 | 0.5742 | 0.0045 | 0.9948 | 35 / 21 |
+
+- **Artifact (ignored by Git):** `data/processed/generator-t5-base-dev-v1_dev_iteration1_candidates.jsonl` (4 candidates per record and setting).
+- **Limitations:** dev only, one checkpoint and seed; the chosen setting was picked among 6 on dev. Decode wall-clock times are invalid as latency (the machine was suspended mid-run).
+- **Decision:** H1 rejected (fewer facts lose more recall than they save in distractors). H2 supported: adopt top 5 facts + grounded beam selection as the current pipeline (dev 0.6195, up from 0.5923). Next: retrain with retrieved-style hard distractors on a GPU.

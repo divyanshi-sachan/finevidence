@@ -19,7 +19,8 @@ Notebooks are core research deliverables. They document executed inspection and 
 | `11_program_generator.ipynb` | M3 | T5 program generator over retrieved facts; dev execution/program accuracy, retrieved vs gold-facts oracle. | Executed on Kaggle T4 2026-10-22 (commit `5f10139`); the executed copy with interpretation is committed. |
 | `12_milestone_audit_statistics_privacy.ipynb` | M2–M3 audit | Statistical split comparison, privacy scan, bootstrap CIs and McNemar tests for M3. | Executed 2026-10-22. |
 | `13_error_analysis.ipynb` | M4 | Categorized dev errors of the M3 pipeline. | Executed 2026-11-01. |
-| `14_model_evaluation.ipynb` | M4 | Single held-out test evaluation and robustness. | After error analysis. |
+| `14_inference_iteration.ipynb` | M4 | Improvement iteration 1 without retraining: fewer input facts and grounded beam selection, dev only. | Executed 2026-11-01. |
+| `15_model_evaluation.ipynb` | M4 | Single held-out test evaluation and robustness. | After the improvement iterations. |
 
 ## Standards
 
