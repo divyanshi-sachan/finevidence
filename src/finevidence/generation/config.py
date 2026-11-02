@@ -39,6 +39,7 @@ class GeneratorConfig:
     rankings_sha256: str
     model_dir: Path
     predictions_dir: Path
+    hard_distractor_share: float = 0.0
 
 
 def load_generator_config(
@@ -72,6 +73,7 @@ def load_generator_config(
         rankings_sha256=inputs["rankings_sha256"],
         model_dir=Path(environment.get(MODEL_DIR_ENVIRONMENT_VARIABLE) or output["model_dir"]),
         predictions_dir=Path(output["predictions_dir"]),
+        hard_distractor_share=float(training.get("hard_distractor_share", 0.0)),
     )
     _validate(config)
     return config
@@ -106,6 +108,8 @@ def _validate(config: GeneratorConfig) -> None:
         raise ValueError("batch_size must be a multiple of micro_batch_size")
     if not 0 < config.learning_rate < 1 or not 0 <= config.warmup_ratio < 1:
         raise ValueError("learning_rate must be in (0, 1) and warmup_ratio in [0, 1)")
+    if not 0 <= config.hard_distractor_share <= 1:
+        raise ValueError("hard_distractor_share must be in [0, 1]")
     if not isinstance(config.mixed_precision, bool):
         raise ValueError("mixed_precision must be true or false")
     if not _SHA256.fullmatch(config.rankings_sha256):

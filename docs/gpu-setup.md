@@ -89,3 +89,14 @@ print(torch.cuda.is_available() and torch.cuda.get_device_name(0))
 ```
 
 Results can differ slightly across GPU types and library versions even with fixed seeds, so compare runs only when their environment records match.
+
+## 7. Launch Notebook 15 from the command line (Kaggle API)
+
+M4 iteration 2 runs without the Kaggle web UI. `kaggle/iteration2/launch.sh` uploads the two dev artifacts the notebook needs (retriever rankings and Notebook 11 predictions) as a private dataset and pushes a private GPU kernel that clones this repository at the current commit and runs `kaggle/iteration2/run.py`.
+
+1. Install the CLI into the project environment: `.venv/bin/python -m pip install kaggle` (tooling only; not a project dependency).
+2. Commit and push; the kernel clones the commit from GitHub.
+3. With your Kaggle username in `KAGGLE_USERNAME` and an API token in `KAGGLE_API_TOKEN` (or `KAGGLE_API_KEY`), run `kaggle/iteration2/launch.sh`. Keep the token in an environment variable or a local `.env`; never commit it or paste it into a notebook.
+4. Check progress with `.venv/bin/kaggle kernels status <username>/finevidence-m4-iteration2`, then download the outputs with `.venv/bin/kaggle kernels output <username>/finevidence-m4-iteration2 -p <dir>`: the executed notebook, the checkpoint under `models/` and the prediction files under `finevidence/data/processed/`.
+
+Kernels with internet access need a phone-verified Kaggle account.

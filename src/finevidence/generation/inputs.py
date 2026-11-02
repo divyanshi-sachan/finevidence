@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import random
+import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -24,6 +25,8 @@ from typing import Any
 
 from finevidence.data.preprocessing import build_structured_input
 from finevidence.retrieval.pairs import build_ranking_pairs
+
+_TOKEN = re.compile(r"[a-z0-9]+(?:\.\d+)?")
 
 
 @dataclass(frozen=True)
@@ -66,12 +69,23 @@ def _gold_keys(record: Mapping[str, Any], texts: Mapping[str, str]) -> list[str]
     return [key for key in texts if key in gold]
 
 
-def build_training_examples(
-    records: Iterable[Mapping[str, Any]], *, facts_per_input: int, seed: int
-) -> list[GeneratorExample]:
-    """Gold facts plus random same-record distractors up to ``facts_per_input``, shuffled.
+def _question_overlap(question: str, text: str) -> int:
+    return len(set(_TOKEN.findall(question.lower())) & set(_TOKEN.findall(text.lower())))
 
-    Records with more gold facts than ``facts_per_input`` keep all gold facts.
+
+def build_training_examples(
+    records: Iterable[Mapping[str, Any]],
+    *,
+    facts_per_input: int,
+    seed: int,
+    hard_distractor_share: float = 0.0,
+) -> list[GeneratorExample]:
+    """Gold facts plus same-record distractors up to ``facts_per_input``, shuffled.
+
+    A ``hard_distractor_share`` of the distractor slots is filled with the non-gold facts that
+    share the most words with the question (ties in segment order), imitating what a retriever
+    ranks highly; the rest are random. At 0 this is the original random sampling. Records with
+    more gold facts than ``facts_per_input`` keep all gold facts.
     """
     rng = random.Random(seed)
     examples = []
@@ -79,7 +93,12 @@ def build_training_examples(
         texts = _segment_texts(record)
         gold = _gold_keys(record, texts)
         others = [key for key in texts if key not in gold]
-        distractors = rng.sample(others, min(len(others), max(0, facts_per_input - len(gold))))
+        slots = max(0, facts_per_input - len(gold))
+        question = build_structured_input(record)["question"]
+        by_overlap = sorted(others, key=lambda key: -_question_overlap(question, texts[key]))
+        hard = by_overlap[: round(slots * hard_distractor_share)]
+        rest = [key for key in others if key not in hard]
+        distractors = [*hard, *rng.sample(rest, min(len(rest), slots - len(hard)))]
         keys = [*gold, *distractors]
         rng.shuffle(keys)
         examples.append(_example(record, keys, texts, record["qa"]["program"]))

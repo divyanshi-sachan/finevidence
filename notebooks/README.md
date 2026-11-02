@@ -20,7 +20,8 @@ Notebooks are core research deliverables. They document executed inspection and 
 | `12_milestone_audit_statistics_privacy.ipynb` | M2–M3 audit | Statistical split comparison, privacy scan, bootstrap CIs and McNemar tests for M3. | Executed 2026-10-22. |
 | `13_error_analysis.ipynb` | M4 | Categorized dev errors of the M3 pipeline. | Executed 2026-11-01. |
 | `14_inference_iteration.ipynb` | M4 | Improvement iteration 1 without retraining: fewer input facts and grounded beam selection, dev only. | Executed 2026-11-01. |
-| `15_model_evaluation.ipynb` | M4 | Single held-out test evaluation and robustness. | After the improvement iterations. |
+| `15_hard_distractor_generator.ipynb` | M4 | Improvement iteration 2: generator retrained with hard distractors (GPU), dev only. | Ready; smoke-tested on CPU, GPU run pending. |
+| `16_model_evaluation.ipynb` | M4 | Single held-out test evaluation and robustness. | After the improvement iterations. |
 
 ## Standards
 
