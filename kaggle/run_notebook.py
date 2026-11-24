@@ -25,6 +25,9 @@ subprocess.run(
     [sys.executable, "-m", "pip", "install", "--quiet", "-e", ".[model]"], cwd=repo, check=True
 )
 
+# Kaggle ships torchao 0.10; recent peft refuses to import next to it. Nothing here uses it.
+subprocess.run([sys.executable, "-m", "pip", "uninstall", "--quiet", "-y", "torchao"], check=False)
+
 processed = repo / "data" / "processed"
 processed.mkdir(parents=True, exist_ok=True)
 for artifact in Path("/kaggle/input").rglob("*.jsonl"):
