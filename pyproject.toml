@@ -30,6 +30,8 @@ research = [
 model = [
   "torch>=2.3",  # torch.amp.GradScaler
   "transformers>=4.40",
+  # LoRA adapters for the decoder-only generator (Notebook 16): trains a small fraction of weights.
+  "peft>=0.13",
   # Headless notebook runs that stream cell output live and save the executed notebook.
   "papermill>=2.5",
 ]
