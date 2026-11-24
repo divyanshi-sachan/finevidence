@@ -51,5 +51,11 @@ cat > "$STAGE/kernel/kernel-metadata.json" <<JSON
   "kernel_sources": []
 }
 JSON
-"$KAGGLE" kernels push -p "$STAGE/kernel"
+PUSH_OUTPUT="$("$KAGGLE" kernels push -p "$STAGE/kernel" 2>&1)"
+echo "$PUSH_OUTPUT"
+# The CLI can exit 0 after a refused push (for example the GPU session limit), so check the text.
+if grep -qi "error" <<<"$PUSH_OUTPUT"; then
+  echo "Kernel push failed; nothing is running." >&2
+  exit 1
+fi
 echo "Pushed $KERNEL at commit $COMMIT. Check: $KAGGLE kernels status $KERNEL"

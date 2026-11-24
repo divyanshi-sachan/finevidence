@@ -191,3 +191,26 @@
 - **Artifact (ignored by Git):** `data/processed/generator-t5-base-dev-v1_dev_iteration1_candidates.jsonl` (4 candidates per record and setting).
 - **Limitations:** dev only, one checkpoint and seed; the chosen setting was picked among 6 on dev. Decode wall-clock times are invalid as latency (the machine was suspended mid-run).
 - **Decision:** H1 rejected (fewer facts lose more recall than they save in distractors). H2 supported: adopt top 5 facts + grounded beam selection as the current pipeline (dev 0.6195, up from 0.5923). Next: retrain with retrieved-style hard distractors on a GPU.
+
+## 2026-11-02 — Improvement iteration 2: generator retrained with hard distractors, dev (Notebook 15)
+
+- **Question:** Does training the generator with hard distractors (non-gold facts sharing the most words with the question) make it more robust to the distractors it sees at prediction time?
+- **Data and protocol:** pinned train (fitting) and dev (epoch selection and reporting), SHA-256 verified; Notebook 10 dev rankings. Test not loaded.
+- **Configuration:** `configs/generator_t5_base_hard.toml`: identical to Notebook 11 except `hard_distractor_share = 0.5` (a single untuned choice). Epoch selected by dev execution accuracy, top beam.
+- **Command:** `kaggle/iteration2/launch.sh` (private Kaggle kernel `divyanshi92/finevidence-m4-iteration2`, version 1, running `kaggle/iteration2/run.py`, which executes the notebook with papermill). The first two pushes were refused by Kaggle's two-GPU-session limit while other kernels were running; the third ran.
+- **Code state and environment:** commit `a03599d`; Python 3.13.15, torch 2.11.0+cu128, transformers 5.16.1, Tesla T4. Peak GPU memory 9.55 GB; about 650 s of training and 3 min of dev decoding per epoch; 8,486 s (2.4 h) in total. 114/6,251 train sources exceed 512 tokens (36 with random distractors).
+- **Training history (dev retrieved execution correct, top beam):** 294, 401, 443, 455, 472, 495, 494, 512, 517, **520 (epoch 10, selected)**.
+- **Observed dev results (selected checkpoint, 883 records):**
+
+  | Condition | Correct | Execution acc. | Program acc. | Invalid | Grounding |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | Retrieved, top beam | 520 | 0.5889 | 0.5504 | 0.0034 | 0.9710 |
+  | Retrieved, grounded | 539 | 0.6104 | 0.5742 | 0.0023 | 0.9939 |
+  | Gold-facts oracle, top beam | 564 | 0.6387 | 0.6036 | 0.0045 | 0.9744 |
+  | Gold-facts oracle, grounded | 586 | 0.6636 | 0.6308 | 0.0023 | 0.9959 |
+
+  Paired with the Notebook 11 checkpoint (top beam, 523): 68 fixed, 71 broken (p = 0.87). Paired with the current pipeline (Notebook 11 + grounded selection, 547), computed locally from the downloaded predictions and the Notebook 14 candidates: 57 fixed, 65 broken (p = 0.53); 604 records are correct for at least one of the two.
+- **Verification:** the executed notebook's cell sources are identical to `a03599d`; it has no error outputs.
+- **Artifacts (ignored by Git):** `models/generator-t5-base-hard-v1/best/` (`model.safetensors` SHA-256 `e42200d8ba97e30d56741f1580d17a94418aca2bcd35e84bd0fc1199d60ced0c`), `models/generator-t5-base-hard-v1/history.json`, `data/processed/generator-t5-base-hard-v1_dev_{retrieved,gold_facts_oracle}_{top_beam,grounded}_predictions.jsonl`. The executed notebook is committed.
+- **Limitations:** one seed, one untuned share; dev accuracy was still rising at epoch 10; more train inputs are truncated than with random distractors.
+- **Decision:** do not adopt. The pipeline stays the Notebook 11 checkpoint with grounded selection (dev 0.6195).
