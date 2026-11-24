@@ -15,7 +15,7 @@ MODEL_DIR_NAME="${3:?model dir name}"
 
 : "${KAGGLE_USERNAME:?set KAGGLE_USERNAME to your Kaggle username}"
 export KAGGLE_API_TOKEN="${KAGGLE_API_TOKEN:-${KAGGLE_API_KEY:?set KAGGLE_API_TOKEN or KAGGLE_API_KEY}}"
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 KAGGLE="${KAGGLE:-$ROOT/.venv/bin/kaggle}"
 COMMIT="$(git -C "$ROOT" rev-parse HEAD)"
 DATASET="$KAGGLE_USERNAME/finevidence-dev-artifacts"
