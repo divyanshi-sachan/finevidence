@@ -16,6 +16,7 @@ REPOSITORY = "https://github.com/divyanshi-sachan/finevidence.git"
 COMMIT = "__COMMIT__"
 MODEL_DIR_NAME = "__MODEL_DIR_NAME__"
 NOTEBOOK = "__NOTEBOOK__"
+REUSE_ADAPTER = "__REUSE__" == "reuse"
 
 work = Path("/kaggle/working")
 repo = work / "finevidence"
@@ -34,9 +35,21 @@ for artifact in Path("/kaggle/input").rglob("*.jsonl"):
     shutil.copy(artifact, processed / artifact.name)
     print("input artifact:", artifact.name, flush=True)
 
+model_dir = work / "models" / MODEL_DIR_NAME
+if REUSE_ADAPTER:
+    history = next(Path("/kaggle/input").rglob("history.json"))
+    (model_dir / "best").mkdir(parents=True, exist_ok=True)
+    for item in history.parent.iterdir():
+        if item.is_file() and item.name != "dataset-metadata.json":
+            name = "history.json" if item.name == "history.json" else f"best/{item.name}"
+            target = model_dir / name
+            shutil.copy(item, target)
+    print("reusing adapter:", sorted(p.name for p in (model_dir / "best").iterdir()), flush=True)
+
 environment = {
     **os.environ,
-    "FINEVIDENCE_MODEL_DIR": str(work / "models" / MODEL_DIR_NAME),
+    "FINEVIDENCE_MODEL_DIR": str(model_dir),
+    "FINEVIDENCE_REUSE_ADAPTER": "1" if REUSE_ADAPTER else "0",
     # Reduces CUDA memory fragmentation with variable-length batches.
     "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
 }

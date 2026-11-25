@@ -43,3 +43,6 @@ predictions_dir = "data/processed"
 num_samples = 16
 temperature = 0.7
 top_p = 0.95
+
+# One record (16 sequences) per batch: 4 records ran out of T4 memory in run 2.
+sample_batch_size = 1

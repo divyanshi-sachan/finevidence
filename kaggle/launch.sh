@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Run one repository notebook on a private Kaggle GPU kernel:
-#   kaggle/launch.sh <notebook path> <kernel slug> <model dir name>
+#   kaggle/launch.sh <notebook path> <kernel slug> <model dir name> [reuse]
+# With "reuse", the local models/<model dir name> (best adapter and history.json) is uploaded as a
+# second private dataset and the notebook runs with FINEVIDENCE_REUSE_ADAPTER=1 (decode only).
 # e.g. kaggle/launch.sh notebooks/16_llm_lora_generator.ipynb finevidence-m4-iteration3 generator-qwen2.5-1.5b-lora-v1
 #
 # Needs KAGGLE_USERNAME and a Kaggle API token in KAGGLE_API_TOKEN (KAGGLE_API_KEY is accepted
@@ -12,6 +14,7 @@ set -euo pipefail
 NOTEBOOK="${1:?notebook path}"
 SLUG="${2:?kernel slug}"
 MODEL_DIR_NAME="${3:?model dir name}"
+REUSE="${4:-}"
 
 : "${KAGGLE_USERNAME:?set KAGGLE_USERNAME to your Kaggle username}"
 export KAGGLE_API_TOKEN="${KAGGLE_API_TOKEN:-${KAGGLE_API_KEY:?set KAGGLE_API_TOKEN or KAGGLE_API_KEY}}"
@@ -41,7 +44,24 @@ else
 fi
 until [ "$("$KAGGLE" datasets status "$DATASET" 2>/dev/null)" = "ready" ]; do sleep 15; done
 
-sed -e "s/__COMMIT__/$COMMIT/" -e "s#__NOTEBOOK__#$NOTEBOOK#" -e "s#__MODEL_DIR_NAME__#$MODEL_DIR_NAME#" \
+SOURCES="\"$DATASET\""
+if [ "$REUSE" = "reuse" ]; then
+  ADAPTER_DATASET="$KAGGLE_USERNAME/finevidence-adapter"
+  mkdir "$STAGE/adapter"
+  cp "$ROOT/models/$MODEL_DIR_NAME/history.json" "$ROOT/models/$MODEL_DIR_NAME/best/"* "$STAGE/adapter/"
+  cat > "$STAGE/adapter/dataset-metadata.json" <<JSON
+{"title": "finevidence-adapter", "id": "$ADAPTER_DATASET", "licenses": [{"name": "other"}]}
+JSON
+  if "$KAGGLE" datasets status "$ADAPTER_DATASET" >/dev/null 2>&1; then
+    "$KAGGLE" datasets version -p "$STAGE/adapter" -m "$MODEL_DIR_NAME at $COMMIT" --quiet
+  else
+    "$KAGGLE" datasets create -p "$STAGE/adapter" --quiet
+  fi
+  until [ "$("$KAGGLE" datasets status "$ADAPTER_DATASET" 2>/dev/null)" = "ready" ]; do sleep 15; done
+  SOURCES="$SOURCES, \"$ADAPTER_DATASET\""
+fi
+
+sed -e "s/__COMMIT__/$COMMIT/" -e "s/__REUSE__/$REUSE/" -e "s#__NOTEBOOK__#$NOTEBOOK#" -e "s#__MODEL_DIR_NAME__#$MODEL_DIR_NAME#" \
   "$ROOT/kaggle/run_notebook.py" > "$STAGE/kernel/run.py"
 cat > "$STAGE/kernel/kernel-metadata.json" <<JSON
 {
@@ -53,7 +73,7 @@ cat > "$STAGE/kernel/kernel-metadata.json" <<JSON
   "is_private": true,
   "enable_gpu": true,
   "enable_internet": true,
-  "dataset_sources": ["$DATASET"],
+  "dataset_sources": [$SOURCES],
   "competition_sources": [],
   "kernel_sources": []
 }
