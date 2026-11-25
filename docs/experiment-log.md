@@ -241,3 +241,10 @@
 - **Artifacts (ignored by Git):** `models/generator-qwen2.5-1.5b-lora-v1/best/` (`adapter_model.safetensors` SHA-256 `9cc4f93c09ed9f122ceee005b37461918d4cf48dcd60a4620b5e861b4bd7b03d`), `models/generator-qwen2.5-1.5b-lora-v1/history.json`, `data/processed/generator-qwen2.5-1.5b-lora-v1_dev_{candidates,retrieved_top_beam_predictions,retrieved_grounded_predictions}.jsonl`. The executed notebook is committed.
 - **Limitations:** one seed and configuration; dev accuracy was still rising at epoch 3, and the epoch was selected on the same dev split it is reported on. Gold-facts oracle not run for this generator.
 - **Decision:** adopt. The current pipeline becomes the BERT retriever (top 5 facts) plus the Qwen2.5-1.5B LoRA generator (dev 0.6908, up from 0.6195). Next: abstention on its candidates toward ≥ 80% selective accuracy at ≥ 50% coverage.
+
+## 2026-11-25 — Improvement iteration 4 (planned): 10 facts and self-consistency, dev (Notebook 17)
+
+- **Hypotheses (not results):** H1: giving the Notebook 16 generator 10 retrieved facts instead of 5 recovers part of the 72 retrieval-miss errors (dev all-gold recall@10 93.54% vs @5 86.98%; 41 of the 72 have all gold facts in the top 10), if the extra distractors cost less. H2: majority voting over 16 sampled programs (temperature 0.7, top-p 0.95) fixes some operation and operand errors, and its vote share is a finer abstention confidence than 4-beam agreement.
+- **Configuration:** `configs/generator_qwen_lora_top10.toml`: Notebook 16 settings except `facts_per_input = 10`, `max_source_tokens = 1024`, `eval_batch_size = 4`, plus `[sampling]`. Untuned single choices.
+- **Comparison planned:** against the Notebook 16 pipeline (610/883) with an exact paired McNemar test; vote share against the M1 target (>= 80% accuracy at >= 50% coverage). Test is not loaded.
+- **Verification so far:** CPU smoke run with a tiny model completed and wrote all prediction and candidate files.

@@ -1,6 +1,6 @@
 import pytest
 
-from finevidence.evaluation.abstention import candidate_agreement, coverage_curve
+from finevidence.evaluation.abstention import candidate_agreement, coverage_curve, majority_vote
 
 TABLE = [["", "2009"], ["revenue", "$ 10"]]
 
@@ -22,3 +22,13 @@ def test_coverage_curve_answers_at_or_above_threshold():
     assert [(p.threshold, p.answered) for p in points] == [(1.0, 2), (0.5, 3), (0.25, 4)]
     assert points[0].accuracy == 1.0 and points[0].coverage == 0.5
     assert points[-1].accuracy == 0.75
+
+
+def test_majority_vote_picks_most_common_value_and_first_index():
+    candidates = ["add(1, 1)", "subtract(5, 1)", "divide(4, 2)", "divide(8, 2)", "divide(4, 0)"]
+    assert majority_vote(candidates, TABLE) == (0, 0.4)
+    assert majority_vote(["divide(4, 0)", "divide(1, 0)"], TABLE) == (0, 0.0)
+
+
+def test_majority_vote_breaks_ties_by_earliest_candidate():
+    assert majority_vote(["subtract(5, 1)", "add(1, 1)"], TABLE) == (0, 0.5)

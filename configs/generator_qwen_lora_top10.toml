@@ -1,0 +1,45 @@
+# Notebook 17 (M4 iteration 4): the Notebook 16 generator with 10 facts per input instead of 5
+# (dev all-gold recall@10 93.54% vs @5 86.98%), plus self-consistency sampling at decode time.
+# Planned settings, not results. Test is not loaded.
+experiment_name = "generator-qwen2.5-1.5b-lora-top10-v1"
+seed = 42
+dataset_root = "data/raw"
+train_split = "train"
+evaluation_split = "dev"
+
+[model]
+pretrained_name = "Qwen/Qwen2.5-1.5B-Instruct"
+# Instruction plus source; truncated from the end, which drops the lowest-ranked facts first.
+max_source_tokens = 1024
+max_new_tokens = 64
+
+[lora]
+rank = 16
+alpha = 32
+dropout = 0.05
+
+[training]
+facts_per_input = 10
+epochs = 3
+micro_batch_size = 4
+gradient_accumulation = 4
+learning_rate = 2e-4
+warmup_ratio = 0.03
+
+[generation]
+num_beams = 4
+eval_batch_size = 4
+
+[inputs]
+rankings_path = "data/processed/retriever_bert_base_dev_rankings.jsonl"
+rankings_sha256 = "d6c31f86c1fd4ab0d68d2cb56996ffe9705fba7dfbfe62464fd7b0ea7bd562e6"
+
+[output]
+model_dir = "models/generator-qwen2.5-1.5b-lora-top10-v1"
+predictions_dir = "data/processed"
+
+[sampling]
+# Self-consistency: programs sampled per dev record; the executed value with most votes wins.
+num_samples = 16
+temperature = 0.7
+top_p = 0.95

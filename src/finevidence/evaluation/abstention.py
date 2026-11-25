@@ -55,3 +55,23 @@ def coverage_curve(confidences: Sequence[float], correct: Sequence[bool]) -> lis
             )
         )
     return points
+
+
+def majority_vote(
+    candidates: Sequence[str], table: Sequence[Sequence[object]]
+) -> tuple[int, float]:
+    """Self-consistency: index of the first candidate with the most common executed value, and
+    that value's share of all candidates (0 and 0.0 when no candidate executes)."""
+    if not candidates:
+        raise ValueError("no candidates")
+    values = [execute_program(program, table) for program in candidates]
+    counts: dict[object, int] = {}
+    first: dict[object, int] = {}
+    for index, value in enumerate(values):
+        if value.is_valid:
+            counts[value.value] = counts.get(value.value, 0) + 1
+            first.setdefault(value.value, index)
+    if not counts:
+        return 0, 0.0
+    winner = max(counts, key=lambda key: (counts[key], -first[key]))
+    return first[winner], counts[winner] / len(candidates)
