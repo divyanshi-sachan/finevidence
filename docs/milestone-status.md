@@ -50,7 +50,7 @@ The generator beats conservative arithmetic on 493 paired records and loses on 5
 
 | Milestone | Status | Entry condition |
 | --- | --- | --- |
-| M4 Evaluation & Optimization | In progress: categorized dev error analysis and manual ambiguity review done ([Notebook 13](../notebooks/13_error_analysis.ipynb)); iteration 1 adopted grounded beam selection, dev 61.95% ([Notebook 14](../notebooks/14_inference_iteration.ipynb)); iteration 2, hard-distractor retraining, not adopted ([Notebook 15](../notebooks/15_hard_distractor_generator.ipynb)), robustness, abstention and the test run remain | M3 reviewed. First task: categorized error analysis of the 360 dev errors. The single test evaluation comes after methods and targets are fixed (the retriever must be retrained at `7028afc` first). |
+| M4 Evaluation & Optimization | In progress: categorized dev error analysis and manual ambiguity review done ([Notebook 13](../notebooks/13_error_analysis.ipynb)); iteration 1 adopted grounded beam selection, dev 61.95% ([Notebook 14](../notebooks/14_inference_iteration.ipynb)); iteration 2, hard-distractor retraining, not adopted ([Notebook 15](../notebooks/15_hard_distractor_generator.ipynb)); iteration 3, Qwen2.5-1.5B LoRA generator, adopted, dev 69.08% ([Notebook 16](../notebooks/16_llm_lora_generator.ipynb)); robustness, abstention and the test run remain | M3 reviewed. First task: categorized error analysis of the 360 dev errors. The single test evaluation comes after methods and targets are fixed (the retriever must be retrained at `7028afc` first). |
 | M5 Deployment Prototype | Not started | M4 evaluation, error analysis and robustness evidence exist |
 | M6 Final Delivery | Not started | M5 prototype demonstrated |
 

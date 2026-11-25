@@ -214,3 +214,30 @@
 - **Artifacts (ignored by Git):** `models/generator-t5-base-hard-v1/best/` (`model.safetensors` SHA-256 `e42200d8ba97e30d56741f1580d17a94418aca2bcd35e84bd0fc1199d60ced0c`), `models/generator-t5-base-hard-v1/history.json`, `data/processed/generator-t5-base-hard-v1_dev_{retrieved,gold_facts_oracle}_{top_beam,grounded}_predictions.jsonl`. The executed notebook is committed.
 - **Limitations:** one seed, one untuned share; dev accuracy was still rising at epoch 10; more train inputs are truncated than with random distractors.
 - **Decision:** do not adopt. The pipeline stays the Notebook 11 checkpoint with grounded selection (dev 0.6195).
+
+## 2026-11-25 — Improvement iteration 3: Qwen2.5-1.5B-Instruct LoRA program generator, dev (Notebook 16)
+
+- **Question:** Does a larger decoder-only generator (Qwen2.5-1.5B-Instruct with LoRA) beat the T5-base pipeline with the same inputs (question plus top-5 retrieved facts)?
+- **Data and protocol:** pinned train (fitting) and dev (epoch selection and reporting), SHA-256 verified; Notebook 10 dev rankings. Test not loaded.
+- **Configuration:** `configs/generator_qwen_lora.toml`: LoRA rank 16, alpha 32, dropout 0.05 on all linear layers (18.5M trainable of 1.56B parameters, 1.18%); 3 epochs, micro batch 4 × accumulation 4, lr 2e-4, warmup 3%, fp16 autocast, gradient checkpointing; 4 beams. Epoch selected by dev greedy execution accuracy.
+- **Command:** `kaggle/launch.sh notebooks/16_llm_lora_generator.ipynb finevidence-m4-iteration3 generator-qwen2.5-1.5b-lora-v1` (private Kaggle kernel `divyanshi92/finevidence-m4-iteration3`, version 2; version 1 failed on a torchao import, fixed in `45b1542`).
+- **Code state and environment:** commit `45b1542`; Python 3.13.16, torch 2.11.0+cu130, transformers 5.20.2, peft 0.21.2, Tesla T4. Peak GPU memory 9.2 GB; about 37.5 min of training plus 7 min of greedy dev decoding per epoch; training 2 h 14 min, final 4-beam dev decode 14 min 42 s. 126/6,251 train sources truncated at 512 tokens.
+- **Training history (dev greedy execution correct):** 530, 570, **596 (epoch 3, selected)**. Train loss 0.229, 0.091, 0.060.
+- **Observed dev results (selected adapter, 883 records):**
+
+  | Condition | Correct | Execution acc. | Program acc. | Invalid | Grounding |
+  | --- | ---: | ---: | ---: | ---: | ---: |
+  | Retrieved, top beam | 610 | 0.6908 | 0.6523 | 0.0011 | 0.9990 |
+  | Retrieved, grounded | 610 | 0.6908 | 0.6523 | 0.0011 | 0.9990 |
+
+  Grounded selection changes nothing here because the top beam is almost always grounded. Paired with the current pipeline (Notebook 11 + grounded selection, 547), computed locally from the downloaded predictions and the Notebook 14 candidates: 109 fixed, 46 broken, exact McNemar p = 4.5e-7.
+- **Further dev metrics (retrieved, grounded; computed locally from the downloaded predictions):** execution accuracy 610/883 (95% Clopper–Pearson CI 65.9–72.1%); program accuracy 576/883 = 65.23% (CI 62.0–68.4%); 34 answers correct with a non-equivalent program; 1 invalid program; 1,948/1,950 literals grounded (99.90%). Retrieval is unchanged (Notebook 10 BERT, all-gold recall@3 80.75%, @5 86.98%).
+  - By gold program steps: 1 step 393/523 (75.1%), 2 steps 184/287 (64.1%), 3+ steps 33/73 (45.2%).
+  - By gold evidence source: table only 422/542 (77.9%), text only 111/198 (56.1%), table and text 77/143 (53.9%).
+  - By first gold operation: divide 246/323 (76.2%), subtract 254/360 (70.6%), add 49/100 (49.0%), multiply 24/56 (42.9%); table_average 15/19, table_max 7/7, table_min 5/5, greater 8/9, table_sum 2/4 (too few to interpret).
+  - Error categories (`categorize_error`, 273 errors; current-pipeline counts from Notebook 13 in brackets): operation 91 (123), operand 85 (108), retrieval miss 72 (81), scale 13 (14), sign 9 (14), near miss 2 (13), invalid 1 (7).
+  - Beam-agreement abstention (`candidate_agreement`, answer if ≥ threshold): 1.00 → 10 answered (1.1%), 100%; 0.75 → 65 (7.4%), 84.62%; 0.50 → 234 (26.5%), 73.93%; 0.25 → 882 (99.9%), 69.16%. Too coarse to reach ≥ 80% at ≥ 50% coverage; a finer signal needs beam log-probabilities, which this run did not save.
+- **Verification:** the executed notebook's cell sources are identical to `45b1542`; it has no error outputs.
+- **Artifacts (ignored by Git):** `models/generator-qwen2.5-1.5b-lora-v1/best/` (`adapter_model.safetensors` SHA-256 `9cc4f93c09ed9f122ceee005b37461918d4cf48dcd60a4620b5e861b4bd7b03d`), `models/generator-qwen2.5-1.5b-lora-v1/history.json`, `data/processed/generator-qwen2.5-1.5b-lora-v1_dev_{candidates,retrieved_top_beam_predictions,retrieved_grounded_predictions}.jsonl`. The executed notebook is committed.
+- **Limitations:** one seed and configuration; dev accuracy was still rising at epoch 3, and the epoch was selected on the same dev split it is reported on. Gold-facts oracle not run for this generator.
+- **Decision:** adopt. The current pipeline becomes the BERT retriever (top 5 facts) plus the Qwen2.5-1.5B LoRA generator (dev 0.6908, up from 0.6195). Next: abstention on its candidates toward ≥ 80% selective accuracy at ≥ 50% coverage.
