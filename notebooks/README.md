@@ -22,7 +22,7 @@ Notebooks are core research deliverables. They document executed inspection and 
 | `14_inference_iteration.ipynb` | M4 | Improvement iteration 1 without retraining: fewer input facts and grounded beam selection, dev only. | Executed 2026-11-01. |
 | `15_hard_distractor_generator.ipynb` | M4 | Improvement iteration 2: generator retrained with hard distractors (GPU), dev only. | Executed on Kaggle T4 2026-11-02 (commit `a03599d`); the executed copy with interpretation is committed. |
 | `16_llm_lora_generator.ipynb` | M4 | Improvement iteration 3: Qwen2.5-1.5B-Instruct program generator with LoRA (GPU), dev only. | Executed on a Kaggle T4: dev 610/883 (0.6908), adopted. |
-| `17_llm_top10_self_consistency.ipynb` | M4 | Improvement iteration 4: 10 facts per input and self-consistency voting with vote-share abstention (GPU), dev only. | Smoke-tested on CPU; GPU run pending. |
+| `17_llm_top10_self_consistency.ipynb` | M4 | Improvement iteration 4: 10 facts per input and self-consistency voting with vote-share abstention (GPU), dev only. | Executed on a Kaggle T4: dev 625/883 (0.7078); with abstention 89.41% at 55.6% coverage. Adopted. |
 | `18_model_evaluation.ipynb` | M4 | Single held-out test evaluation and robustness. | After the improvement iterations. |
 
 ## Standards

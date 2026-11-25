@@ -250,3 +250,24 @@
 - **Verification so far:** CPU smoke run with a tiny model completed and wrote all prediction and candidate files.
 - **Run 1 (Kaggle kernel version 1, `c9679f3`):** failed after about 10 minutes with CUDA out of memory in the first training steps (10-fact sequences at micro batch 4). Changed to micro batch 2 × accumulation 8 (same 16 examples per optimizer step) and `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` in `kaggle/run_notebook.py`.
 - **Run 2 (Kaggle kernel version 2, `8014175`):** training completed: 3 epochs of about 60 min each (peak GPU memory 8.76 GB); dev greedy execution correct 556, 590, **604 (epoch 3, selected)**, against 530, 570, 596 with 5 facts in Notebook 16. The 4-beam dev decode finished in 23 min 38 s, then the sampling decode (4 records × 16 sequences per batch, with the training model still in memory) ran out of CUDA memory before any prediction file was written. The best adapter was kept (`adapter_model.safetensors` SHA-256 `1646a66b99ae80c1b738420d94b6d589af0b1796b03c9d8cd915ea433a58b4f5`). Fix: the notebook frees the training model before decoding, samples one record per batch (`sample_batch_size = 1`), and gains a decode-only mode (`FINEVIDENCE_REUSE_ADAPTER=1`, `kaggle/launch.sh ... reuse`) that loads this adapter instead of retraining.
+- **Run 3 (Kaggle kernel version 3, `6cc650e`, decode only with the run-2 adapter):** 4-beam decode 23 min 23 s; 16 samples per record 1 h 10 min 23 s. The executed notebook's cell sources are identical to `6cc650e`; no error outputs.
+- **Observed dev results (883 records):**
+
+  | Selection | Correct | Execution acc. | Program acc. | Invalid | vs Notebook 16 (610): fixed / broken, exact McNemar p |
+  | --- | ---: | ---: | ---: | ---: | --- |
+  | Top beam | 625 | 0.7078 | 0.6636 | 0.0 | 49 / 34, p = 0.12 |
+  | Grounded | 625 | 0.7078 | 0.6636 | 0.0 | same as top beam |
+  | Vote (16 samples) | 617 | 0.6988 | 0.6523 | 0.0 | 53 / 46, p = 0.55 |
+
+- **Abstention (dev, answer only when confidence ≥ threshold):**
+
+  | Threshold | Vote answer, vote share: answered (coverage), accuracy | Top-beam answer, share of samples agreeing: answered (coverage), accuracy |
+  | --- | --- | --- |
+  | 1.0 | 494 (55.9%), 89.07% (95% CI 86.0–91.7%) | 491 (55.6%), 89.41% |
+  | 0.9375 | 533 (60.4%), 87.99% | 530 (60.0%), 88.30% |
+  | 0.875 | 575 (65.1%), 86.61% | 572 (64.8%), 86.89% |
+  | 0.75 | 671 (76.0%), 82.86% | 657 (74.4%), 84.17% |
+  | 0.625 | 727 (82.3%), 79.50% | 703 (79.6%), 81.65% |
+
+- **Limitations:** one seed; the epoch, the selection rule and the thresholds were all chosen on dev, so these selective accuracies are optimistic until the single test run. H1 (10 facts) is a non-significant +15 records; H2's voting did not raise full-coverage accuracy.
+- **Decision:** adopt the 10-fact adapter with the top-beam answer and the share of 16 samples agreeing with it as confidence. It meets the M1 abstention target on dev at every threshold from 1.0 to 0.75 (for example 84.17% at 74.4% coverage), against 4-beam agreement's 73.93% at 26.5%. Freeze one threshold before the test run.
