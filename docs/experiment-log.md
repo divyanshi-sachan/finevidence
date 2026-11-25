@@ -271,3 +271,7 @@
 
 - **Limitations:** one seed; the epoch, the selection rule and the thresholds were all chosen on dev, so these selective accuracies are optimistic until the single test run. H1 (10 facts) is a non-significant +15 records; H2's voting did not raise full-coverage accuracy.
 - **Decision:** adopt the 10-fact adapter with the top-beam answer and the share of 16 samples agreeing with it as confidence. It meets the M1 abstention target on dev at every threshold from 1.0 to 0.75 (for example 84.17% at 74.4% coverage), against 4-beam agreement's 73.93% at 26.5%. Freeze one threshold before the test run.
+
+### M4 retriever rerun for the test evaluation (2026-11-25)
+
+Kernel `divyanshi92/finevidence-m4-retriever-rerun` v1 reran Notebook 10 unchanged (code identical to `7028afc`). Dev all-gold recall@5 per epoch: 0.8573, 0.8732, **0.8822** (best, kept), 0.8641, 0.8573. The best checkpoint is 1.24 points from the original 0.8698, within the protocol's 1.5-point band, so the rerun is **accepted**. Only dev labels were read.
