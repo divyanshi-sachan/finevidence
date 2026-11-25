@@ -248,3 +248,4 @@
 - **Configuration:** `configs/generator_qwen_lora_top10.toml`: Notebook 16 settings except `facts_per_input = 10`, `max_source_tokens = 1024`, `eval_batch_size = 4`, plus `[sampling]`. Untuned single choices.
 - **Comparison planned:** against the Notebook 16 pipeline (610/883) with an exact paired McNemar test; vote share against the M1 target (>= 80% accuracy at >= 50% coverage). Test is not loaded.
 - **Verification so far:** CPU smoke run with a tiny model completed and wrote all prediction and candidate files.
+- **Run 1 (Kaggle kernel version 1, `c9679f3`):** failed after about 10 minutes with CUDA out of memory in the first training steps (10-fact sequences at micro batch 4). Changed to micro batch 2 × accumulation 8 (same 16 examples per optimizer step) and `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` in `kaggle/run_notebook.py`.

@@ -37,6 +37,8 @@ for artifact in Path("/kaggle/input").rglob("*.jsonl"):
 environment = {
     **os.environ,
     "FINEVIDENCE_MODEL_DIR": str(work / "models" / MODEL_DIR_NAME),
+    # Reduces CUDA memory fragmentation with variable-length batches.
+    "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
 }
 subprocess.run(
     [
