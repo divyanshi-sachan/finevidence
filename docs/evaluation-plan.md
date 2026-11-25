@@ -46,7 +46,7 @@ All predictions use only `id`, `question`, `table`, `pre_text` and `post_text` (
 
 ## Planned for M4
 
-- The single test evaluation of the selected pipeline. This requires re-running Notebook 10 at commit `7028afc`, because the retriever checkpoint was not kept.
+- The single test evaluation of the selected pipeline, frozen in [m4-test-protocol.md](m4-test-protocol.md) and run by Notebook 18. Notebook 10 is re-run unchanged first (its code is identical to `7028afc`), because the retriever checkpoint was not kept.
 - Categorized error analysis: retrieval, operand selection, period/unit interpretation, multi-step composition, ambiguity and other observed categories. **Done** (Notebook 13): rule-based categories for all 360 errors (`categorize_error`) and a manual review of a fixed 40-error sample for ambiguity and gold-label quality ([m4-ambiguity-review.csv](m4-ambiguity-review.csv)).
 - Improvement iterations. **Iteration 1 done** (Notebook 14): grounded beam selection adopted (dev 0.6195 vs 0.5923, 24 fixed / 0 broken); fewer input facts rejected. **Iteration 2 done** (Notebook 15): retraining with hard distractors, not adopted (grounded 0.6104 vs 0.6195; 57 fixed / 65 broken).
 - Robustness checks for question rewording, reporting-period and unit perturbations.

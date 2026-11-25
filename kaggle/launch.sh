@@ -3,6 +3,8 @@
 #   kaggle/launch.sh <notebook path> <kernel slug> <model dir name> [reuse]
 # With "reuse", the local models/<model dir name> (best adapter and history.json) is uploaded as a
 # second private dataset and the notebook runs with FINEVIDENCE_REUSE_ADAPTER=1 (decode only).
+# With "adapter", the same dataset is attached without that flag (the notebook finds it itself).
+# KERNEL_SOURCES (optional, comma-separated "user/slug") attaches earlier kernels' outputs.
 # e.g. kaggle/launch.sh notebooks/16_llm_lora_generator.ipynb finevidence-m4-iteration3 generator-qwen2.5-1.5b-lora-v1
 #
 # Needs KAGGLE_USERNAME and a Kaggle API token in KAGGLE_API_TOKEN (KAGGLE_API_KEY is accepted
@@ -45,7 +47,7 @@ fi
 until [ "$("$KAGGLE" datasets status "$DATASET" 2>/dev/null)" = "ready" ]; do sleep 15; done
 
 SOURCES="\"$DATASET\""
-if [ "$REUSE" = "reuse" ]; then
+if [ "$REUSE" = "reuse" ] || [ "$REUSE" = "adapter" ]; then
   ADAPTER_DATASET="$KAGGLE_USERNAME/finevidence-adapter"
   mkdir "$STAGE/adapter"
   cp "$ROOT/models/$MODEL_DIR_NAME/history.json" "$ROOT/models/$MODEL_DIR_NAME/best/"* "$STAGE/adapter/"
@@ -59,6 +61,11 @@ JSON
   fi
   until [ "$("$KAGGLE" datasets status "$ADAPTER_DATASET" 2>/dev/null)" = "ready" ]; do sleep 15; done
   SOURCES="$SOURCES, \"$ADAPTER_DATASET\""
+fi
+
+KERNELS=""
+if [ -n "${KERNEL_SOURCES:-}" ]; then
+  KERNELS="$(sed -e 's/[^,][^,]*/"&"/g' <<<"$KERNEL_SOURCES")"
 fi
 
 sed -e "s/__COMMIT__/$COMMIT/" -e "s/__REUSE__/$REUSE/" -e "s#__NOTEBOOK__#$NOTEBOOK#" -e "s#__MODEL_DIR_NAME__#$MODEL_DIR_NAME#" \
@@ -75,7 +82,7 @@ cat > "$STAGE/kernel/kernel-metadata.json" <<JSON
   "enable_internet": true,
   "dataset_sources": [$SOURCES],
   "competition_sources": [],
-  "kernel_sources": []
+  "kernel_sources": [$KERNELS]
 }
 JSON
 PUSH_OUTPUT="$("$KAGGLE" kernels push -p "$STAGE/kernel" 2>&1)"

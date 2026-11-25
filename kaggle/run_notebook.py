@@ -37,9 +37,9 @@ for artifact in Path("/kaggle/input").rglob("*.jsonl"):
 
 model_dir = work / "models" / MODEL_DIR_NAME
 if REUSE_ADAPTER:
-    history = next(Path("/kaggle/input").rglob("history.json"))
+    adapter = next(Path("/kaggle/input").rglob("adapter_model.safetensors"))
     (model_dir / "best").mkdir(parents=True, exist_ok=True)
-    for item in history.parent.iterdir():
+    for item in adapter.parent.iterdir():
         if item.is_file() and item.name != "dataset-metadata.json":
             name = "history.json" if item.name == "history.json" else f"best/{item.name}"
             target = model_dir / name
