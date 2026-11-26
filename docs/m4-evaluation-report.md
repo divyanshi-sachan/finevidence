@@ -68,7 +68,7 @@ questions, debatable gold labels or convention mismatches.
 | Thousands separators in numbers | 42.92% | −27.9 | yes (p < 0.001) |
 
 The separator failure comes from programs copying `136,104` as two arguments. FinQA itself has no
-separators, so the test score is unaffected, but real documents do.
+separators, so the test score is unaffected, but real documents do. **Fixed after M4:** the number canonicalizer (`finevidence.data.numbers`) restores 625/883 (70.78%) under the same perturbation, with every answer unchanged.
 
 **Justified exception.** The contract asks for robustness to reporting periods and units. Changing a
 period or unit changes the correct answer, so it needs new gold labels that M4 did not create. The
@@ -79,7 +79,7 @@ error analysis measures only the observed form of this risk (13 scale errors amo
 - One seed and one GPU type for every result; no variance estimate.
 - Accuracy falls sharply on 3+ step programs and text-heavy evidence.
 - 5.84 s per question, dominated by the 16 samples used for confidence.
-- Separator-formatted numbers break programs unless normalized first.
+- Separator-formatted numbers broke programs; fixed by the number canonicalizer (dev, after M4).
 - Unit and period robustness is unmeasured.
 - About half of test questions are answered at the primary threshold; the rest must be shown as
   unanswered, not guessed.

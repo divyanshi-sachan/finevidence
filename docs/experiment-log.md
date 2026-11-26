@@ -320,3 +320,13 @@ Plan agreed after the improvement research ([report](../reports/Improving%20FinQ
 **Change.** `finevidence.data.numbers.canonicalize_numbers` removes thousands separators in well-formed groups and maps Unicode minus and non-breaking spaces to ASCII. It is applied in `segment_retrieval_text` and to the question in retriever pairs and generator inputs, so retrieval, generation and any future app share it. Parenthesised negatives and scale words are kept as FinQA writes them. **Verified identity on FinQA:** it changes 0 of 191,354 train and 0 of 26,834 dev segments and 0 questions, so existing rankings, adapters and results are unaffected. Applied after the `thousands_separators` perturbation it restores the original text for all but 54 dev segments, where the perturbation itself drops leading zeros in identifiers (e.g. `055000000`).
 
 **Planned check.** Notebook 19 gains a `thousands_separators_canonical` condition; it runs with `FINEVIDENCE_CONDITIONS=thousands_separators,thousands_separators_canonical` (plus `original`).
+
+**Result** (kernel `divyanshi92/finevidence-m4-robustness-canonical` v1, commit `43514fd`, T4, adapter `1646a66b…`, `smoke_test: false`, dev):
+
+| Condition | Inputs changed | Correct | Accuracy | Fixed / broken | Answer kept |
+|---|---:|---:|---:|---|---:|
+| original | 0 | 625 | 70.78% | — | 100% |
+| thousands_separators | 624 | 379 | 42.92% | 3 / 249 | 59.2% |
+| thousands_separators_canonical | 15 | 625 | 70.78% | 0 / 0 | 100% |
+
+Canonicalization fully removes the separator failure on dev: every answer matches the unperturbed run. The 15 records whose input still differs (leading zeros dropped by the perturbation) gave the same answers. Adopted; it is a no-op on FinQA, so no earlier result changes.
