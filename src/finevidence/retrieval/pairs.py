@@ -16,6 +16,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from finevidence.data.numbers import canonicalize_numbers
 from finevidence.data.preprocessing import build_structured_input
 
 from .segments import EvidenceSegment, build_evidence_segments
@@ -33,7 +34,12 @@ class RetrieverPair:
 
 
 def segment_retrieval_text(segment: EvidenceSegment) -> str:
-    """Render a segment for the retriever, pairing table cells with their column headers."""
+    """Render a segment for the retriever and generator, numbers in the FinQA convention."""
+    return canonicalize_numbers(_render_segment(segment))
+
+
+def _render_segment(segment: EvidenceSegment) -> str:
+    """Pair table cells with their column headers; text segments are kept as written."""
     if segment.source == "text":
         return segment.text
     if segment.key == "table_0":
@@ -51,7 +57,10 @@ def build_ranking_pairs(
     source = build_structured_input(record)
     return [
         RetrieverPair(
-            source["id"], segment.key, source["question"], segment_retrieval_text(segment)
+            source["id"],
+            segment.key,
+            canonicalize_numbers(source["question"]),
+            segment_retrieval_text(segment),
         )
         for segment in build_evidence_segments(record, include_header_row=include_header_row)
     ]

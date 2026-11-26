@@ -50,6 +50,8 @@ environment = {
     **os.environ,
     "FINEVIDENCE_MODEL_DIR": str(model_dir),
     "FINEVIDENCE_REUSE_ADAPTER": "1" if REUSE_ADAPTER else "0",
+    # Optional subset of Notebook 19 conditions; empty runs all of them.
+    "FINEVIDENCE_CONDITIONS": "__CONDITIONS__",
     # Reduces CUDA memory fragmentation with variable-length batches.
     "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
 }

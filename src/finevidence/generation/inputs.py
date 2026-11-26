@@ -23,6 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from finevidence.data.numbers import canonicalize_numbers
 from finevidence.data.preprocessing import build_structured_input
 from finevidence.retrieval.pairs import build_ranking_pairs
 
@@ -52,7 +53,7 @@ def _segment_texts(record: Mapping[str, Any]) -> dict[str, str]:
 def _example(
     record: Mapping[str, Any], keys: Sequence[str], texts: Mapping[str, str], target: str | None
 ) -> GeneratorExample:
-    question = build_structured_input(record)["question"]
+    question = canonicalize_numbers(build_structured_input(record)["question"])
     fact_texts = tuple(texts[key] for key in keys)
     return GeneratorExample(
         record_id=str(record["id"]),

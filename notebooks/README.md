@@ -24,7 +24,7 @@ Notebooks are core research deliverables. They document executed inspection and 
 | `16_llm_lora_generator.ipynb` | M4 | Improvement iteration 3: Qwen2.5-1.5B-Instruct program generator with LoRA (GPU), dev only. | Executed on a Kaggle T4: dev 610/883 (0.6908), adopted. |
 | `17_llm_top10_self_consistency.ipynb` | M4 | Improvement iteration 4: 10 facts per input and self-consistency voting with vote-share abstention (GPU), dev only. | Executed on a Kaggle T4: dev 625/883 (0.7078); with abstention 89.41% at 55.6% coverage. Adopted. |
 | `18_model_evaluation.ipynb` | M4 | Single held-out test evaluation of the frozen pipeline ([protocol](../docs/m4-test-protocol.md)), with the inference record. | Executed once on Kaggle (test 69.05%; see the experiment log). |
-| `19_robustness_checks.ipynb` | M4 | Dev robustness of the frozen pipeline under four label-preserving input perturbations (reworded question, reversed facts, thousands separators, a foreign fact). | Executed on Kaggle; results in the experiment log. |
+| `19_robustness_checks.ipynb` | M4 | Dev robustness of the frozen pipeline under four label-preserving input perturbations (reworded question, reversed facts, thousands separators, a foreign fact), and separators followed by the number canonicalizer. | Executed on Kaggle; results in the experiment log. |
 
 ## Standards
 

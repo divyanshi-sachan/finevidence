@@ -310,3 +310,13 @@ Kernel `divyanshi92/finevidence-m4-robustness` v1 at commit `d6c02c9`, Tesla T4;
 | foreign_fact | 883 | 608 | 68.86% | 8 / 25 | 0.005 | 90.3% |
 
 **Reading.** Question rewording causes no significant drop, though 11.4% of answers change. Fact order and an irrelevant extra fact each cost about 2 points (significant). Thousands separators are a severe failure: of 366 changed programs, 223 copy a separator-formatted literal (e.g. `divide(136,104, const_1000)`), which FinQA program syntax reads as extra arguments. **Mitigation for M5:** normalize separators out of evidence text before generation (FinQA's own convention), and treat any user-supplied document format as a robustness risk. Each result is one seed; label-changing perturbations (units, periods) remain untested.
+
+### Improvement step 1: number canonicalization (2026-11-26, after M4 handoff)
+
+Plan agreed after the improvement research ([report](../reports/Improving%20FinQA%20model%20accuracy.md), not committed): canonicalization, number-format robustness, executor-verified self-training, retrieval from measured errors, then evaluation. The test split is spent; every step is selected on dev and any further test use needs a new written protocol.
+
+**Audit.** Evidence text reached the retriever and generator unchanged; the executor splits program arguments on commas, so a copied `136,104` becomes two arguments. The grounding check and table operations already strip separators.
+
+**Change.** `finevidence.data.numbers.canonicalize_numbers` removes thousands separators in well-formed groups and maps Unicode minus and non-breaking spaces to ASCII. It is applied in `segment_retrieval_text` and to the question in retriever pairs and generator inputs, so retrieval, generation and any future app share it. Parenthesised negatives and scale words are kept as FinQA writes them. **Verified identity on FinQA:** it changes 0 of 191,354 train and 0 of 26,834 dev segments and 0 questions, so existing rankings, adapters and results are unaffected. Applied after the `thousands_separators` perturbation it restores the original text for all but 54 dev segments, where the perturbation itself drops leading zeros in identifiers (e.g. `055000000`).
+
+**Planned check.** Notebook 19 gains a `thousands_separators_canonical` condition; it runs with `FINEVIDENCE_CONDITIONS=thousands_separators,thousands_separators_canonical` (plus `original`).
