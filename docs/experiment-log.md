@@ -296,3 +296,17 @@ Inference record: 0.046 s retrieval, 1.48 s beams, 4.31 s sampling, 5.84 s per r
 ### M4 robustness checks, Notebook 19 (planned, 2026-11-26)
 
 Dev only, the frozen adapter and Notebook 10 dev rankings, top of 4 beams. Four label-preserving perturbations (`finevidence.generation.perturbations`): `reword` (surface rewrites of the question; 588 of 883 questions get a word-level change, all get the trailing "?" toggled), `reverse_facts`, `thousands_separators` (2457 -> 2,457, years 1900–2099 kept; changes 624 records — FinQA writes numbers without separators, so removing them would change nothing), and `foreign_fact` (the next record's top fact inserted first). Each condition is compared with the unperturbed run: accuracy, flips, exact McNemar test, and the share of answers kept. Answer-changing perturbations (unit rescaling, period shifts) are out of scope because they need new labels. Limitation: operand grounding is computed on the perturbed fact text, so separator-formatted numbers may lower that side metric without affecting execution accuracy.
+
+### M4 robustness checks, Notebook 19 (results, 2026-11-26)
+
+Kernel `divyanshi92/finevidence-m4-robustness` v1 at commit `d6c02c9`, Tesla T4; adapter SHA `1646a66b…` verified, `smoke_test: false`. The unperturbed run reproduces Notebook 17 exactly (625/883). Dev only; no setting was tuned.
+
+| Condition | Inputs changed | Correct | Accuracy | Fixed / broken vs original | McNemar p | Answer kept |
+|---|---:|---:|---:|---|---:|---:|
+| original | 0 | 625 | 70.78% | — | — | 100% |
+| reword | 883 | 617 | 69.88% | 21 / 29 | 0.32 | 88.6% |
+| reverse_facts | 883 | 602 | 68.18% | 32 / 55 | 0.018 | 79.7% |
+| thousands_separators | 624 | 379 | 42.92% | 3 / 249 | < 0.001 | 59.2% |
+| foreign_fact | 883 | 608 | 68.86% | 8 / 25 | 0.005 | 90.3% |
+
+**Reading.** Question rewording causes no significant drop, though 11.4% of answers change. Fact order and an irrelevant extra fact each cost about 2 points (significant). Thousands separators are a severe failure: of 366 changed programs, 223 copy a separator-formatted literal (e.g. `divide(136,104, const_1000)`), which FinQA program syntax reads as extra arguments. **Mitigation for M5:** normalize separators out of evidence text before generation (FinQA's own convention), and treat any user-supplied document format as a robustness risk. Each result is one seed; label-changing perturbations (units, periods) remain untested.
