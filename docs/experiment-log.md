@@ -330,3 +330,7 @@ Plan agreed after the improvement research ([report](../reports/Improving%20FinQ
 | thousands_separators_canonical | 15 | 625 | 70.78% | 0 / 0 | 100% |
 
 Canonicalization fully removes the separator failure on dev: every answer matches the unperturbed run. The 15 records whose input still differs (leading zeros dropped by the perturbation) gave the same answers. Adopted; it is a no-op on FinQA, so no earlier result changes.
+
+### Improvement step 4a: self-training samples, Notebook 20 (planned, 2026-11-26)
+
+Rejection-sampling fine-tuning, part 1. On **train only**, the frozen Notebook 17 adapter samples 8 programs per record (temperature 0.8, top-p 0.95) from one training-style input (gold plus random distractors, 10 facts, input seed 1042). `finevidence.generation.self_training.select_verified_programs` keeps up to 4 distinct programs, other than the gold one, that execute to the gold answer with every literal found in the shown facts. Expected runtime about 4 hours on a T4. Part 2 (Notebook 21) retrains on gold plus verified programs and is selected on dev against 625/883; it is accepted only with an exact McNemar p < 0.05 on dev. Hypothesis, not a result: the math-benchmark gains (5–13 points) may not transfer to FinQA.

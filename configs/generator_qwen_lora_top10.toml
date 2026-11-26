@@ -46,3 +46,12 @@ top_p = 0.95
 
 # One record (16 sequences) per batch: 4 records ran out of T4 memory in run 2.
 sample_batch_size = 1
+
+# Self-training (Notebook 20): programs sampled on train from the Notebook 17 adapter, kept when
+# executor-verified (select_verified_programs). Train labels only.
+[self_training]
+samples_per_record = 8
+temperature = 0.8
+top_p = 0.95
+max_kept_per_record = 4
+input_seed = 1042
