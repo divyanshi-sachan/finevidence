@@ -292,3 +292,7 @@ Kernel `divyanshi92/finevidence-m4-test` v1 at commit `4dea6a5`, Tesla T4, run o
 Inference record: 0.046 s retrieval, 1.48 s beams, 4.31 s sampling, 5.84 s per record in total on a T4.
 
 **M1 targets:** ≥ 55% test execution accuracy — met (69.05%). ≥ 80% accuracy at ≥ 50% coverage — met at the primary threshold (87.79% at 52.14%), though the coverage interval's lower bound (49.2%) falls just below 50%. The latency target of ≤ 1 s per question is **not met** (5.84 s, dominated by 16-sample confidence). Test is now spent; it must not be used for further tuning.
+
+### M4 robustness checks, Notebook 19 (planned, 2026-11-26)
+
+Dev only, the frozen adapter and Notebook 10 dev rankings, top of 4 beams. Four label-preserving perturbations (`finevidence.generation.perturbations`): `reword` (surface rewrites of the question; 588 of 883 questions get a word-level change, all get the trailing "?" toggled), `reverse_facts`, `thousands_separators` (2457 -> 2,457, years 1900–2099 kept; changes 624 records — FinQA writes numbers without separators, so removing them would change nothing), and `foreign_fact` (the next record's top fact inserted first). Each condition is compared with the unperturbed run: accuracy, flips, exact McNemar test, and the share of answers kept. Answer-changing perturbations (unit rescaling, period shifts) are out of scope because they need new labels. Limitation: operand grounding is computed on the perturbed fact text, so separator-formatted numbers may lower that side metric without affecting execution accuracy.
