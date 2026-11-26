@@ -275,3 +275,20 @@
 ### M4 retriever rerun for the test evaluation (2026-11-25)
 
 Kernel `divyanshi92/finevidence-m4-retriever-rerun` v1 reran Notebook 10 unchanged (code identical to `7028afc`). Dev all-gold recall@5 per epoch: 0.8573, 0.8732, **0.8822** (best, kept), 0.8641, 0.8573. The best checkpoint is 1.24 points from the original 0.8698, within the protocol's 1.5-point band, so the rerun is **accepted**. Only dev labels were read.
+
+### M4 single test evaluation, Notebook 18 (2026-11-26)
+
+Kernel `divyanshi92/finevidence-m4-test` v1 at commit `4dea6a5`, Tesla T4, run once per [the frozen protocol](m4-test-protocol.md); adapter SHA-256 `1646a66b…` verified, `smoke_test: false`, retriever from the accepted rerun. No setting was changed after the run.
+
+| Metric (test, n = 1,147) | Result | 95% CI |
+|---|---|---|
+| Execution accuracy | 792/1147 = 69.05% | 66.3–71.7% |
+| Program accuracy | 752/1147 = 65.56% | 62.7–68.3% |
+| Invalid-program rate / operand grounding | 0.35% / 99.54% | |
+| Retrieval all-gold recall@5 / @10 | 0.8684 / 0.9268 | |
+| Selective, threshold 1.0 (primary) | coverage 598/1147 = 52.14% (49.2–55.1%); accuracy 525/598 = 87.79% (84.9–90.3%) | |
+| Selective, threshold 0.75 | coverage 808/1147 = 70.44% (67.7–73.1%); accuracy 678/808 = 83.91% (81.2–86.4%) | |
+
+Inference record: 0.046 s retrieval, 1.48 s beams, 4.31 s sampling, 5.84 s per record in total on a T4.
+
+**M1 targets:** ≥ 55% test execution accuracy — met (69.05%). ≥ 80% accuracy at ≥ 50% coverage — met at the primary threshold (87.79% at 52.14%), though the coverage interval's lower bound (49.2%) falls just below 50%. The latency target of ≤ 1 s per question is **not met** (5.84 s, dominated by 16-sample confidence). Test is now spent; it must not be used for further tuning.
