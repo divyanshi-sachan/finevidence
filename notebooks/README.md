@@ -26,7 +26,7 @@ Notebooks are core research deliverables. They document executed inspection and 
 | `18_model_evaluation.ipynb` | M4 | Single held-out test evaluation of the frozen pipeline ([protocol](../docs/m4-test-protocol.md)), with the inference record. | Executed once on Kaggle (test 69.05%; see the experiment log). |
 | `19_robustness_checks.ipynb` | M4 | Dev robustness of the frozen pipeline under four label-preserving input perturbations (reworded question, reversed facts, thousands separators, a foreign fact), and separators followed by the number canonicalizer. | Executed on Kaggle; results in the experiment log. |
 | `20_self_training_samples.ipynb` | Post-M4 | Executor-verified programs sampled on train from the Notebook 17 adapter, as extra training targets. | Executed on Kaggle: 873 new programs for 777 of 6,251 records. |
-| `21_self_training_retrain.ipynb` | Post-M4 | Fresh LoRA retrained on gold plus Notebook 20 verified programs; paired McNemar against Notebook 17 on dev. | Smoke-tested on CPU; Kaggle run pending. |
+| `21_self_training_retrain.ipynb` | Post-M4 | Fresh LoRA retrained on gold plus Notebook 20 verified programs; paired McNemar against Notebook 17 on dev. | Executed: 625/883, 31 fixed / 31 broken, p = 1.0; not adopted. |
 
 ## Standards
 
