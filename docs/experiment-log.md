@@ -351,3 +351,18 @@ Rejection-sampling fine-tuning, part 1. On **train only**, the frozen Notebook 1
 ### Improvement step 5: retrieval error measurement (dev, 2026-11-27, analysis only)
 
 Notebook 17 top-beam predictions (625/883) against the adopted retriever's dev rankings. Of the 258 errors, **227 have every gold fact in the top 10** and only **31 miss a gold fact** (last gold fact at rank 11–15: 12; 16–20: 8; beyond 20 or absent: 11). Missed gold facts among errors are mostly text (26) rather than table rows (10). Another 26 records are answered correctly despite a missing gold fact. Even a perfect retriever would at most reach the in-context accuracy (599/826 = 72.5%) on the 31, about 22 records; widening to 15 facts could reach at most 12 of them while adding distractors (an irrelevant fact alone cost 17 net records in the robustness check). Conclusion: retrieval is a minor lever for this pipeline; most remaining errors are reasoning errors with the evidence already present.
+
+### Step 6a: cheaper confidence for abstention (dev, 2026-11-27, analysis of saved Notebook 17 candidates)
+
+The 16-sample confidence costs 4.31 of the 5.84 s per question. Alternatives computed from the saved dev candidates (`generator-qwen2.5-1.5b-lora-top10-v1_dev_candidates.jsonl`, no new decoding), answer = top beam (625/883):
+
+| Confidence | Extra decoding | At the strictest threshold | Accuracy at about 50% coverage |
+|---|---|---|---|
+| 16 samples agree with top beam (current) | 16 samples | 55.6% cov, 89.41% acc | 89.41% (55.6%) |
+| 8 samples | 8 samples | 59.7% cov, 87.48% acc | — |
+| 4 samples | 4 samples | 65.2% cov, 85.94% acc | — |
+| 2 samples | 2 samples | 72.6% cov, 82.37% acc | — |
+| 4-beam agreement | none | too coarse (1.4% at 1.0) | 70.78% (100%) |
+| **Top-beam length-normalized log-prob** | **none** | continuous | **91.18% (50.1%)** |
+
+Top-beam log-prob at matched coverage: 55.6% → 89.82% (vs 89.41% for 16 samples); 60% → 87.74%; 70% → 84.98%; 74.4% → 83.71% (vs 83.6% secondary in Notebook 17). It matches or beats 16-sample agreement at every coverage checked while removing the sampling step, so estimated latency falls from 5.84 s to about 1.53 s (retrieval plus beams; estimate from the M4 timing, not measured). Dev was used to choose it, so these numbers are optimistic. Not yet evaluated on test; that needs a new frozen protocol because the M4 test run is spent.
