@@ -106,6 +106,17 @@ def build_training_examples(
     return examples
 
 
+def build_keyed_example(
+    record: Mapping[str, Any], keys: Sequence[str], target: str | None
+) -> GeneratorExample:
+    """Example with exactly the facts ``keys`` in that order (e.g. to replay a saved input)."""
+    texts = _segment_texts(record)
+    unknown = [key for key in keys if key not in texts]
+    if unknown:
+        raise ValueError(f"record {record['id']} has no segments {unknown[:3]}")
+    return _example(record, keys, texts, target)
+
+
 def build_retrieved_examples(
     records: Iterable[Mapping[str, Any]],
     rankings: Mapping[str, Sequence[str]],

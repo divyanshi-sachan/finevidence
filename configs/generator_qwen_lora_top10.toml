@@ -55,3 +55,15 @@ temperature = 0.8
 top_p = 0.95
 max_kept_per_record = 4
 input_seed = 1042
+
+# Self-training retrain (Notebook 21): a fresh LoRA from the same base and settings as Notebook 17,
+# trained on gold plus the Notebook 20 verified programs. Planned settings, not results.
+[self_training_retrain]
+experiment_name = "generator-qwen2.5-1.5b-lora-selftrain-v1"
+model_dir = "models/generator-qwen2.5-1.5b-lora-selftrain-v1"
+verified_programs = "self-training_train_verified_programs.jsonl"
+verified_sha256 = "8b1dfa88d990bfa69b22d30b66619af8114557cebccea59a20ac5b70837e326f"
+# Baseline: Notebook 17 top-beam dev predictions (625/883), compared with exact McNemar.
+baseline_predictions = "generator-qwen2.5-1.5b-lora-top10-v1_dev_retrieved_top_beam_predictions.jsonl"
+baseline_sha256 = "6a8b8f9d8f165bc14b19d360ac6720f05aa877f9dbd4c31b2b705426f84ec418"
+baseline_correct = 625

@@ -10,9 +10,12 @@ dev or test.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Iterable, Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
+from finevidence.generation.inputs import GeneratorExample, build_keyed_example
 from finevidence.generation.scoring import score_program_prediction
 
 
@@ -42,3 +45,62 @@ def select_verified_programs(
             if len(kept) == cap:
                 break
     return kept
+
+
+def load_verified_programs(path: Path) -> dict[str, tuple[tuple[str, ...], tuple[str, ...]]]:
+    """Notebook 20 output as ``{record_id: (fact_keys, verified_programs)}``; empty rows dropped."""
+    verified: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {}
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        row = json.loads(line)
+        if row["record_id"] in verified:
+            raise ValueError(f"line {line_number}: duplicate record {row['record_id']!r}")
+        if row["verified"]:
+            verified[row["record_id"]] = (tuple(row["fact_keys"]), tuple(row["verified"]))
+    return verified
+
+
+def audit_verified_programs(
+    records: Sequence[Mapping[str, Any]],
+    verified: Mapping[str, tuple[Sequence[str], Sequence[str]]],
+    *,
+    cap: int,
+    excluded_ids: Iterable[str] = (),
+) -> dict[str, int]:
+    """Re-check every verified program against ``records`` (train); raise on any violation.
+
+    Each record id must be a train id and not in ``excluded_ids`` (dev and test ids); each
+    program must still pass ``select_verified_programs`` on the facts it was sampled with.
+    """
+    by_id = {str(record["id"]): record for record in records}
+    excluded = set(excluded_ids)
+    programs = 0
+    for record_id, (keys, kept) in verified.items():
+        if record_id not in by_id or record_id in excluded:
+            raise ValueError(f"{record_id!r} is not an exclusively-train record")
+        example = build_keyed_example(by_id[record_id], keys, None)
+        if list(kept) != select_verified_programs(
+            by_id[record_id], kept, example.fact_texts, cap=cap
+        ):
+            raise ValueError(f"{record_id!r} has a program that no longer verifies")
+        programs += len(kept)
+    return {"records_with_new_program": len(verified), "new_programs": programs}
+
+
+def self_training_examples(
+    records: Sequence[Mapping[str, Any]],
+    verified: Mapping[str, tuple[Sequence[str], Sequence[str]]],
+    *,
+    epoch: int,
+) -> list[GeneratorExample]:
+    """At most one extra example per record per epoch: verified program ``epoch mod n``.
+
+    The input replays the facts the program was verified on, so its literals stay grounded.
+    Rotating programs keeps a record with 4 verified programs at the same weight as one with 1.
+    """
+    examples = []
+    for record in records:
+        entry = verified.get(str(record["id"]))
+        if entry:
+            keys, kept = entry
+            examples.append(build_keyed_example(record, keys, kept[epoch % len(kept)]))
+    return examples
