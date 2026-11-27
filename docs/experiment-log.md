@@ -366,3 +366,18 @@ The 16-sample confidence costs 4.31 of the 5.84 s per question. Alternatives com
 | **Top-beam length-normalized log-prob** | **none** | continuous | **91.18% (50.1%)** |
 
 Top-beam log-prob at matched coverage: 55.6% → 89.82% (vs 89.41% for 16 samples); 60% → 87.74%; 70% → 84.98%; 74.4% → 83.71% (vs 83.6% secondary in Notebook 17). It matches or beats 16-sample agreement at every coverage checked while removing the sampling step, so estimated latency falls from 5.84 s to about 1.53 s (retrieval plus beams; estimate from the M4 timing, not measured). Dev was used to choose it, so these numbers are optimistic. Not yet evaluated on test; that needs a new frozen protocol because the M4 test run is spent.
+
+### Step 6b: beam log-prob confidence, second test use (2026-11-27, run once under the [frozen protocol](m6-confidence-test-protocol.md))
+
+- **Deviation from the protocol:** the saved `m4-test_predictions.jsonl` (kernel `divyanshi92/finevidence-m4-test`, commit `4dea6a5`) stores answers and beam scores but not `execution_correct`, so correctness was recomputed with the Notebook 18 scorer (`score_program_prediction` on the saved answer and fact keys). Integrity check: it reproduces 792/1147 and the M4 16-sample result (598 answered, 87.79%). Thresholds and method unchanged.
+- **Result (test, n = 1,147):**
+
+  | Confidence | Threshold | Answered | Coverage (95% CI) | Accuracy (95% CI) |
+  |---|---|---:|---|---|
+  | Top-beam log-prob (primary) | ≥ −0.0150 | 589 | 51.35% (48.4–54.3%) | **88.29%** (85.4–90.8%) |
+  | Top-beam log-prob (secondary) | ≥ −0.0377 | 825 | 71.93% (69.2–74.5%) | 82.30% (79.5–84.9%) |
+  | 16 samples, M4 (primary) | 1.0 | 598 | 52.14% | 87.79% |
+  | 16 samples, M4 (secondary) | ≥ 0.75 | 808 | 70.44% | 83.91% |
+
+- **Reading:** the free confidence is about equal to the 16-sample confidence on test (primary +0.5 points accuracy at 0.8 points lower coverage; secondary 1.6 points lower accuracy at 1.5 points higher coverage); described, not significance-tested. The M1 target (≥ 80% at ≥ 50% coverage) is met at the primary threshold, narrowly (coverage CI lower bound 48.4%).
+- **Decision:** adopt the top-beam log-probability as the prototype's confidence; it removes the 16-sample step (4.31 s of 5.84 s per question). The test split is now used twice and must not be used again without a new protocol. Latency of about 1.5 s per question is an estimate until measured in M5; the ≤ 1 s target is still not met.
