@@ -402,3 +402,11 @@ Top-beam log-prob at matched coverage: 55.6% → 89.82% (vs 89.41% for 16 sample
   | Rules, 20 candidates | 613 | 0.6942 | 0.6489 | 82 | 5 / 17 | −12 | 0.017 (worse) | 1.96 ms |
 
 - **Reading:** the top beam already passes every rule for 879 of 883 questions, so on beams the rules almost never act; the recoverable 88 beam questions are errors that run, are grounded and still give the wrong answer. Over 20 candidates, picking by log-prob across beams and samples is significantly worse: sample log-probs are not comparable with beam scores as a selector. **Not adopted.** Selection gains need a learned signal (research plan steps 2–3), fitted on train candidates, not on these dev predictions.
+
+### Improvement step 8 (research plan step 2): feature reranker over beams, Notebook 23 — protocol (pre-registered 2026-11-28, before any fit)
+
+- **Data:** the saved Notebook 17 dev candidates (SHA-256 `237557f6…`); no new decoding. Train-split candidates were not used: Notebook 20 saved no scores and used gold-plus-random facts, unlike dev retrieval (user decision: dev cross-fitting).
+- **Candidates ranked:** the 4 beams of each question. **Features (label-free, from candidates, retrieved facts and raw table only):** beam rank; log-prob; gap to the top beam's log-prob; executes; all literals grounded; share of the 4 beams and of the 16 samples whose executed value equals this candidate's; number of steps; uses a table operation; uses a constant; number of literals.
+- **Model, fixed (no tuning):** `StandardScaler` + `LogisticRegression(C=1.0, max_iter=1000)`, label = candidate executes to the gold answer. Choose the beam with the highest predicted probability; ties go to the lower beam rank.
+- **Cross-fitting:** `KFold(n_splits=5, shuffle=True, random_state=42)` over questions; every question's choice comes from a model fitted on the other 4 folds. Dev labels are used only to fit the out-of-fold models and to score.
+- **Acceptance:** fixed > broken with exact two-sided McNemar p < 0.05 against the top beam (625/883), and no data issue. The out-of-fold estimate still comes from dev, so an adopted reranker needs a fresh check before any claim beyond dev. Test is not used.
