@@ -28,6 +28,7 @@ Notebooks are core research deliverables. They document executed inspection and 
 | `20_self_training_samples.ipynb` | Post-M4 | Executor-verified programs sampled on train from the Notebook 17 adapter, as extra training targets. | Executed on Kaggle: 873 new programs for 777 of 6,251 records. |
 | `21_self_training_retrain.ipynb` | Post-M4 | Fresh LoRA retrained on gold plus Notebook 20 verified programs; paired McNemar against Notebook 17 on dev. | Executed: 625/883, 31 fixed / 31 broken, p = 1.0; not adopted. |
 | `22_rule_based_selection.ipynb` | Post-M4 | Four fixed rules over saved Notebook 17 candidates (CPU); McNemar against the top beam. | Executed: 4 beams 625/883 (no change); 20 candidates 613/883 (p = 0.017, worse); not adopted. |
+| `23_feature_reranker.ipynb` | Post-M4 | Logistic-regression reranker over beam features, 5-fold cross-fitted on dev (CPU). | Executed: 625/883, 13 fixed / 13 broken, p = 1.0; not adopted. |
 
 ## Standards
 
