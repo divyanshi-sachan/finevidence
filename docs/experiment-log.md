@@ -381,3 +381,24 @@ Top-beam log-prob at matched coverage: 55.6% → 89.82% (vs 89.41% for 16 sample
 
 - **Reading:** the free confidence is about equal to the 16-sample confidence on test (primary +0.5 points accuracy at 0.8 points lower coverage; secondary 1.6 points lower accuracy at 1.5 points higher coverage); described, not significance-tested. The M1 target (≥ 80% at ≥ 50% coverage) is met at the primary threshold, narrowly (coverage CI lower bound 48.4%).
 - **Decision:** adopt the top-beam log-probability as the prototype's confidence; it removes the 16-sample step (4.31 s of 5.84 s per question). The test split is now used twice and must not be used again without a new protocol. Latency of about 1.5 s per question is an estimate until measured in M5; the ≤ 1 s target is still not met.
+
+### Improvement step 7 (research plan step 1): rule-based candidate selection, Notebook 22 (dev, CPU, 2026-11-28)
+
+- **Audit (read-only):** the saved Notebook 17 candidates (SHA-256 `237557f6…`) have 883 rows in dev order from one generator commit (`6cc650e`), 4 beams and 16 samples each with length-normalized log-probs; fact keys equal the pinned rankings' top 10 (`d6c31f86…`); beam 0 equals the 625/883 baseline predictions (`6a8b8f9d…`). Fact texts are not stored; they are rebuilt deterministically from the raw context by those keys without reading annotations. No per-candidate decode timing is stored, so only the selector's CPU cost is measured. Nothing was missing for this step.
+- **Method (`finevidence.generation.rule_selection`, fixed before evaluation, nothing fitted):** reject malformed programs, failed controlled execution (including invalid step references), numeric literals absent from the retrieved facts, and table rows whose label is not in the retrieved facts; pick the highest log-prob survivor, else the top beam. Predictions written and hashed before dev labels were read.
+- **Rejections:**
+
+  | Pool | Candidates | Malformed | Execution | Ungrounded literal | Table row not in facts | Survived | No survivor |
+  |---|---:|---:|---:|---:|---:|---:|---:|
+  | 4 beams | 3,532 | 17 | 11 | 36 | 0 | 3,468 | 4 |
+  | 20 candidates | 17,660 | 24 | 17 | 119 | 0 | 17,500 | 1 |
+
+- **Result (dev, 883):**
+
+  | Pool | Correct | Execution acc. | Program acc. | Changed | Fixed / broken | Net | Exact McNemar p | CPU per question |
+  |---|---:|---:|---:|---:|---|---:|---:|---:|
+  | Top beam (baseline) | 625 | 0.7078 | 0.6636 | — | — | — | — | — |
+  | Rules, 4 beams | 625 | 0.7078 | 0.6636 | 1 | 0 / 0 | 0 | 1.0 | 0.42 ms |
+  | Rules, 20 candidates | 613 | 0.6942 | 0.6489 | 82 | 5 / 17 | −12 | 0.017 (worse) | 1.96 ms |
+
+- **Reading:** the top beam already passes every rule for 879 of 883 questions, so on beams the rules almost never act; the recoverable 88 beam questions are errors that run, are grounded and still give the wrong answer. Over 20 candidates, picking by log-prob across beams and samples is significantly worse: sample log-probs are not comparable with beam scores as a selector. **Not adopted.** Selection gains need a learned signal (research plan steps 2–3), fitted on train candidates, not on these dev predictions.
